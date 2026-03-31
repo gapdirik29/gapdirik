@@ -172,7 +172,7 @@ export function findMelds(hand: TileData[], ok: { number: number; color: TileCol
     byNumber.get(t.number)!.push(t);
   });
 
-  for (const [num, tiles] of byNumber) {
+  for (const [, tiles] of byNumber) {
     const uniqueColors = new Map<TileColor, TileData>();
     tiles.forEach(t => uniqueColors.set(t.color, t));
     
@@ -275,7 +275,7 @@ export function calculateEndRoundPenalties(params: {
   playerOpenedMelds: Record<string, TileData[][]>;
   isTeamMode: boolean;
 }): RoundResult[] {
-  const { players, indicator, winnerId, winByOkey, playerHands, isTeamMode } = params;
+  const { players, indicator, winnerId, winByOkey, playerHands } = params;
   const ok = getOkeyInfo(indicator);
   const mult = getColorMultiplier(indicator);
 

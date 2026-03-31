@@ -55,7 +55,7 @@ const TileComponent = ({
     isDragging.current = false;
   };
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = () => {
     if (!isDragging.current) {
       onClick?.();
     }

@@ -34,8 +34,8 @@ const RackComponent = ({
   canOpenSeries, canOpenDoubles, seriesPoints, doublesPoints,
   onOpenSeries, onOpenDoubles, onAppends, onSortDoubles, onSortSeries,
   canPutBack, onPutBack,
-  handCount, appendableTiles, minMeldToOpen, colorMult,
-  tileSkin, highestSeriesValue, highestDoublesValue, tournamentScores
+  handCount, appendableTiles, colorMult,
+  tileSkin, highestSeriesValue, tournamentScores
 }: RackProps) => {
   const rackRef = useRef<HTMLDivElement>(null);
 

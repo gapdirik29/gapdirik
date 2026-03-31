@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { X, CreditCard, PlayCircle, Coins, Zap, Trophy, ShieldCheck } from 'lucide-react';
 
 interface StoreProps {
