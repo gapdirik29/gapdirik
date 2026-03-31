@@ -15,8 +15,7 @@ import { Lobby } from './components/Lobby';
 import { useSocket } from './context/SocketContext';
 import { soundManager } from './utils/soundManager';
 import { Store } from './components/Store';
-import { StatusBar, Style } from '@capacitor/status-bar';
-import { App as CapApp } from '@capacitor/app';
+import { StatusBar } from '@capacitor/status-bar';
 
 // Optimization: Pre-checking if we are on Capacitor
 const isCapacitor = (window as any).Capacitor !== undefined;

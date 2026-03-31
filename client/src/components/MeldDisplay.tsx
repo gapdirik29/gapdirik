@@ -1,4 +1,3 @@
-import React from 'react';
 import { TileData } from '../types';
 import { Tile } from './Tile';
 
