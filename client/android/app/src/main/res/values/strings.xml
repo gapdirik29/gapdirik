@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Gapdirik Master</string>
+    <string name="title_activity_main">Gapdirik Master</string>
+    <string name="package_name">com.gapdirik.master</string>
+    <string name="custom_url_scheme">com.gapdirik.master</string>
+</resources>

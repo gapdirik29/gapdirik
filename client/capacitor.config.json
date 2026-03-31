@@ -1,0 +1,27 @@
+{
+  "appId": "com.gapdirik.master",
+  "appName": "Gapdirik Master",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true
+  },
+  "android": {
+    "buildOptions": {
+      "keystorePath": null,
+      "keystoreAlias": null,
+      "keystorePassword": null,
+      "keystoreAliasPassword": null
+    }
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#000f0b"
+    },
+    "Keyboard": {
+      "resize": "body",
+      "style": "DARK"
+    }
+  }
+}
