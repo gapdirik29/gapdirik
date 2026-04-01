@@ -965,9 +965,34 @@ io.on('connection', (socket: Socket) => {
   });
 });
 
-app.get('/health', (_, res) => res.json({ status: 'ok', rooms: rooms.size }));
+// [MÜHÜRR] Sunucuyu Sadece Veritabanı Hazırsa Başlat!
+const startServer = async () => {
+  try {
+    console.log('📡 [BAĞLANTI] Veritabanına uzanılıyor...');
+    await mongoose.connect(MONGO_URI, {
+      serverSelectionTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+    });
+    console.log('\n✨ [MÜJDE] Gapdirik Veritabanı Kapıları Ardına Kadar Açıldı! ✅\n');
+    
+    const PORT = process.env.PORT || 10000;
+    httpServer.listen(PORT, () => {
+      console.log(`\n🎮 Gapdirik Sunucu Canlı! → Port: ${PORT}`);
+      console.log(`🌐 Mod: ${process.env.NODE_ENV || 'Production'}\n`);
+    });
+  } catch (err: any) {
+    console.log('\n🚨 [KRİTİK HATA] Veritabanı Bağlanamadığı İçin Sunucu Başlatılamadı!');
+    console.log('──────────────────────────────────────────────────');
+    console.log('SEBEP:', err.message);
+    
+    if (err.message.includes('Authentication failed')) {
+      console.log('İPUCU: ATLAS Şifresi veya Kullanıcı Adı Yanlış!');
+    } else if (err.message.includes('IP address')) {
+      console.log('İPUCU: ATLAS Network Access > 0.0.0.0/0 eklenmemiş!');
+    }
+    console.log('──────────────────────────────────────────────────\n');
+    process.exit(1); // Sunucuyu kapat, hatayı gör!
+  }
+};
 
-const PORT = process.env.PORT || 3001;
-httpServer.listen(PORT, () => {
-  console.log(`\n🎮 Gapdirik Sunucu → http://localhost:${PORT}\n`);
-});
+startServer();
