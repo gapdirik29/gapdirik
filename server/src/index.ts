@@ -19,11 +19,19 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/payment', paymentRoutes);
 
-// MongoDB Bağlantısı (Varsayılan Yerel MongoDB veya .env)
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/gapdirik-db';
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('✅ MongoDB Bağlantısı Başarılı'))
-  .catch((err) => console.error('❌ MongoDB Bağlantı Hatası:', err));
+// MongoDB Bağlantısı (Daha güçlü ve esnek bağlantı mantığı)
+const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/gapdirik-db';
+
+mongoose.connect(MONGO_URI, {
+  serverSelectionTimeoutMS: 5000, // 30 saniye bekleyip timeout olma, 5 saniyede karar ver!
+  socketTimeoutMS: 45000,
+})
+  .then(() => console.log('\n✅ [BAŞARILI] MongoDB Veritabanına Hükmediyoruz!\n'))
+  .catch((err) => {
+    console.error('\n❌ [HATA] Veritabanı Bağlanamadı!');
+    console.error('Sebep:', err.message);
+    console.log('İpucu: MongoDB Atlas > Network Access > 0.0.0.0/0 iznini kontrol edin.\n');
+  });
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {

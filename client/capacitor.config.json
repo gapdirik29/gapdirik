@@ -3,11 +3,12 @@
   "appName": "Gapdirik Master",
   "webDir": "dist",
   "server": {
+    "url": "https://gapdirik.vercel.app",
     "androidScheme": "https",
     "cleartext": true,
     "allowNavigation": [
-      "gapdirik-master.vercel.app",
-      "gapdirik-server.onrender.com"
+      "gapdirik.vercel.app",
+      "gapdirik-backend.onrender.com"
     ]
   },
   "android": {
