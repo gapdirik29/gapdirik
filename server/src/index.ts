@@ -19,19 +19,27 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/payment', paymentRoutes);
 
-// MongoDB Bağlantısı (Daha güçlü ve esnek bağlantı mantığı)
+// MongoDB Bağlantısı (İmparatorluk Seviyesinde Dayanıklılık)
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/gapdirik-db';
 
-mongoose.connect(MONGO_URI, {
-  serverSelectionTimeoutMS: 5000, // 30 saniye bekleyip timeout olma, 5 saniyede karar ver!
-  socketTimeoutMS: 45000,
-})
-  .then(() => console.log('\n✅ [BAŞARILI] MongoDB Veritabanına Hükmediyoruz!\n'))
-  .catch((err) => {
-    console.error('\n❌ [HATA] Veritabanı Bağlanamadı!');
-    console.error('Sebep:', err.message);
-    console.log('İpucu: MongoDB Atlas > Network Access > 0.0.0.0/0 iznini kontrol edin.\n');
-  });
+const connectDB = async () => {
+  try {
+    console.log('📡 [BAĞLANTI] Veritabanı kapısı zorlanıyor...');
+    await mongoose.connect(MONGO_URI, {
+      serverSelectionTimeoutMS: 10000,
+    });
+    console.log('\n✅ [BAŞARILI] MongoDB Kapıları Gapdirik Master İçin Açıldı!\n');
+  } catch (err: any) {
+    console.error('\n❌ [KRİTİK HATA] Veritabanı Bağlanamadı!');
+    console.error('Mesaj:', err.message);
+    console.log('İpucu 1: Atlas > Database Access > gapdirik29 kullanıcısı ve şifresini kontrol edin.');
+    console.log('İpucu 2: Atlas > Network Access > 0.0.0.0/0 izninin "Active" olduğundan emin olun.');
+    console.log('Sistem 10 saniye sonra tekrar deneyecek...\n');
+    setTimeout(connectDB, 10000);
+  }
+};
+
+connectDB();
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
