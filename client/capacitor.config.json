@@ -4,7 +4,11 @@
   "webDir": "dist",
   "server": {
     "androidScheme": "https",
-    "cleartext": true
+    "cleartext": true,
+    "allowNavigation": [
+      "gapdirik-master.vercel.app",
+      "gapdirik-server.onrender.com"
+    ]
   },
   "android": {
     "buildOptions": {
@@ -17,11 +21,26 @@
   "plugins": {
     "StatusBar": {
       "style": "DARK",
-      "backgroundColor": "#000f0b"
+      "backgroundColor": "#000000",
+      "overlaysWebView": true
     },
     "Keyboard": {
       "resize": "body",
-      "style": "DARK"
+      "style": "DARK",
+      "resizeOnFullScreen": true
+    },
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "launchAutoHide": true,
+      "backgroundColor": "#010c0a",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": true,
+      "androidSpinnerStyle": "large",
+      "iosSpinnerStyle": "small",
+      "spinnerColor": "#ffd700",
+      "splashFullScreen": true,
+      "splashImmersive": true
     }
   }
 }

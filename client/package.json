@@ -27,6 +27,7 @@
     "@capacitor/haptics": "^8.0.2",
     "@capacitor/keyboard": "^8.0.2",
     "@capacitor/status-bar": "^8.0.2",
+    "@emailjs/browser": "^4.4.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "clsx": "^2.1.1",

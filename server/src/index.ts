@@ -1,21 +1,23 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import { createServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import mongoose from 'mongoose';
-import authRoutes from './routes/auth';
-import { TileColor, TileData, GameEngine, COLOR_MULTIPLIERS, FAKE_OKEY_MULTIPLIER } from './gameEngine';
-import { BotAI } from './botAI';
-import { getOkeyInfo, isWinningHand, isValidMeld, isOkeyTile, isValidDouble, calculateRoundScores, findMelds, findDoubles } from './winChecker';
-
-dotenv.config();
+import authRoutes from './routes/auth.js';
+import paymentRoutes from './routes/payment.js';
+import { TileColor, TileData, GameEngine, COLOR_MULTIPLIERS, FAKE_OKEY_MULTIPLIER } from './gameEngine.js';
+import { BotAI } from './botAI.js';
+import { getOkeyInfo, isWinningHand, isValidMeld, isOkeyTile, isValidDouble, calculateRoundScores, findMelds, findDoubles } from './winChecker.js';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
+app.use('/api/payment', paymentRoutes);
 
 // MongoDB Bağlantısı (Varsayılan Yerel MongoDB veya .env)
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/gapdirik-db';

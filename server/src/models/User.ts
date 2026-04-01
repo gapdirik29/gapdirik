@@ -11,6 +11,10 @@ const userSchema = new mongoose.Schema({
     losses: { type: Number, default: 0 },
     gamesPlayed: { type: Number, default: 0 },
   },
+  isEmailVerified: { type: Boolean, default: false },
+  emailVerificationCode: { type: String },
+  resetPasswordCode: { type: String },
+  resetPasswordExpires: { type: Date },
   createdAt: { type: Date, default: Date.now },
 });
 
