@@ -19,27 +19,37 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/payment', paymentRoutes);
 
-// MongoDB Bağlantısı (İmparatorluk Seviyesinde Dayanıklılık)
+// MongoDB Bağlantısı (Hükümdar Seviyesi Hata Teşhisli)
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/gapdirik-db';
 
-const connectDB = async () => {
-  try {
-    console.log('📡 [BAĞLANTI] Veritabanı kapısı zorlanıyor...');
-    await mongoose.connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 10000,
-    });
-    console.log('\n✅ [BAŞARILI] MongoDB Kapıları Gapdirik Master İçin Açıldı!\n');
-  } catch (err: any) {
-    console.error('\n❌ [KRİTİK HATA] Veritabanı Bağlanamadı!');
-    console.error('Mesaj:', err.message);
-    console.log('İpucu 1: Atlas > Database Access > gapdirik29 kullanıcısı ve şifresini kontrol edin.');
-    console.log('İpucu 2: Atlas > Network Access > 0.0.0.0/0 izninin "Active" olduğundan emin olun.');
-    console.log('Sistem 10 saniye sonra tekrar deneyecek...\n');
-    setTimeout(connectDB, 10000);
-  }
-};
+mongoose.set('bufferCommands', false); // Bağlantı yoksa işlemleri bekletme, direkt hata ver ki görelim!
 
-connectDB();
+mongoose.connect(MONGO_URI, {
+  serverSelectionTimeoutMS: 10000,
+  socketTimeoutMS: 45000,
+})
+.then(() => {
+  console.log('\n✨ [MÜJDE] Gapdirik Veritabanı Kapıları Ardına Kadar Açıldı! ✅\n');
+})
+.catch((err) => {
+  console.log('\n🚨 [KRİTİK HATA] Veritabanı Bağlanırken Bir Engel Çıktı!');
+  console.log('──────────────────────────────────────────────────');
+  console.log('SEBEP:', err.message);
+  
+  if (err.message.includes('Authentication failed')) {
+    console.log('İPUCU: MongoDB Atlas > Database Access > Şifre veya Kullanıcı adı YANLIŞ!');
+  } else if (err.message.includes('IP address')) {
+    console.log('İPUCU: MongoDB Atlas > Network Access > 0.0.0.0/0 eklenmemiş veya henüz aktif değil!');
+  } else {
+    console.log('İPUCU: MongoDB Bağlantı Linkinizi (URI) kontrol edin.');
+  }
+  console.log('──────────────────────────────────────────────────\n');
+});
+
+// Bağlantı koptuğunda veya hata olduğunda canlı izle
+mongoose.connection.on('error', err => {
+  console.error('⚠️ [CANLI HATA] Mongoose Hatası:', err);
+});
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -955,29 +965,9 @@ io.on('connection', (socket: Socket) => {
   });
 });
 
+app.get('/health', (_, res) => res.json({ status: 'ok', rooms: rooms.size }));
+
 const PORT = process.env.PORT || 3001;
-
-const startServer = async () => {
-  try {
-    console.log('📡 [BAĞLANTI] Veritabanı kapısı zorlanıyor...');
-    await mongoose.connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 15000,
-    });
-    console.log('\n✅ [BAŞARILI] MongoDB Kapıları Gapdirik Master İçin Açıldı!\n');
-    
-    // Veritabanı BAŞARILI ise sunucuyu başlat!
-    httpServer.listen(PORT, () => {
-      console.log(`\n🎮 Gapdirik Sunucu Canlı → http://localhost:${PORT}\n`);
-    });
-  } catch (err: any) {
-    console.error('\n❌ [KRİTİK HATA] Veritabanı Bağlanamadı!');
-    console.error('Mesaj:', err.message);
-    console.log('Sistem 10 saniye içinde tekrar canlanmayı deneyecek...\n');
-    setTimeout(startServer, 10000);
-  }
-};
-
-startServer();
-
-// Health check her zaman açık (Render canlılığı için)
-app.get('/health', (_, res) => res.json({ status: 'ok', database: mongoose.connection.readyState === 1 }));
+httpServer.listen(PORT, () => {
+  console.log(`\n🎮 Gapdirik Sunucu → http://localhost:${PORT}\n`);
+});
