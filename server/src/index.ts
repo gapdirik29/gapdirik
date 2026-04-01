@@ -955,9 +955,29 @@ io.on('connection', (socket: Socket) => {
   });
 });
 
-app.get('/health', (_, res) => res.json({ status: 'ok', rooms: rooms.size }));
-
 const PORT = process.env.PORT || 3001;
-httpServer.listen(PORT, () => {
-  console.log(`\n🎮 Gapdirik Sunucu → http://localhost:${PORT}\n`);
-});
+
+const startServer = async () => {
+  try {
+    console.log('📡 [BAĞLANTI] Veritabanı kapısı zorlanıyor...');
+    await mongoose.connect(MONGO_URI, {
+      serverSelectionTimeoutMS: 15000,
+    });
+    console.log('\n✅ [BAŞARILI] MongoDB Kapıları Gapdirik Master İçin Açıldı!\n');
+    
+    // Veritabanı BAŞARILI ise sunucuyu başlat!
+    httpServer.listen(PORT, () => {
+      console.log(`\n🎮 Gapdirik Sunucu Canlı → http://localhost:${PORT}\n`);
+    });
+  } catch (err: any) {
+    console.error('\n❌ [KRİTİK HATA] Veritabanı Bağlanamadı!');
+    console.error('Mesaj:', err.message);
+    console.log('Sistem 10 saniye içinde tekrar canlanmayı deneyecek...\n');
+    setTimeout(startServer, 10000);
+  }
+};
+
+startServer();
+
+// Health check her zaman açık (Render canlılığı için)
+app.get('/health', (_, res) => res.json({ status: 'ok', database: mongoose.connection.readyState === 1 }));
