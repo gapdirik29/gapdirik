@@ -121,7 +121,7 @@ export const Lobby: React.FC<LobbyProps> = ({ playerName, userChips, isGuest, on
               <h1 style={{ fontSize: isPortrait ? 18 : 24, fontWeight: 950, textTransform: 'uppercase', letterSpacing: 1, margin: 0, color: '#ffd700' }}>GAPDİRİK <span style={{ color: '#fff' }}>{!isPortrait && 'MASTER'}</span></h1>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 8, fontWeight: 700, opacity: 0.5 }}>
                  <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#4cd137' }} />
-                 CANLI: {rooms.length} MASA
+                 CANLI: {rooms.length} MASA | GÜVENLİ BAĞLANTI AKTİF
               </div>
            </div>
         </div>
