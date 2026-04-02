@@ -176,7 +176,66 @@ body::before {
   to { transform: translate(-50%, 0) scale(1); opacity: 1; }
 }
 
-/* Saklı Scrollbar */
-::-webkit-scrollbar {
-  display: none;
+/* ─── HÜKÜMDAR LANDSCAPE (YAN MOD) DEVRİMİ ─── */
+@media screen and (orientation: landscape) {
+  .game-layout {
+    display: grid;
+    grid-template-columns: 120px 1fr 120px;
+    grid-template-rows: 1fr auto;
+    height: 100vh;
+    padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
+  }
+
+  .rack-area {
+    grid-column: 1 / 4;
+    height: 160px !important;
+  }
+
+  .center-deck-area {
+    transform: scale(0.9);
+  }
+
+  .social-hub-float {
+    position: fixed;
+    left: var(--safe-left);
+    top: 50%;
+    transform: translateY(-50%);
+    flex-direction: column !important;
+    gap: 8px !important;
+  }
 }
+
+@media screen and (orientation: portrait) {
+  .game-layout {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100vh;
+    padding-top: var(--safe-top);
+  }
+
+  .rack-area {
+    height: 200px !important;
+  }
+
+  .center-deck-area {
+    transform: scale(0.75) translateY(-20px);
+  }
+  
+  .social-hub-float {
+    bottom: 220px !important;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Sayfa Kenarlarını Koruma (Notch & Bar) */
+.safe-padding {
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
+
+/* Üst Üste Binme Karşıtı Z-Index Silsilesi */
+.z-modal { z-index: 10000; }
+.z-hud { z-index: 5000; }
+.z-game { z-index: 100; }
