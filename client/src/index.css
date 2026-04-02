@@ -207,27 +207,17 @@ body::before {
 
 @media screen and (orientation: portrait) {
   .game-layout {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100vh;
-    padding-top: var(--safe-top);
+    display: none !important;
   }
-
-  .rack-area {
-    height: 200px !important;
-  }
-
-  .center-deck-area {
-    transform: scale(0.75) translateY(-20px);
-  }
-  
-  .social-hub-float {
-    bottom: 220px !important;
-    width: 100%;
-    justify-content: center;
+  .portrait-only-overlay {
+    display: flex !important;
+    position: fixed; inset: 0; background: var(--bg-main); z-index: 1000000;
+    flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px;
+    background: radial-gradient(circle at center, #15352a 0%, #081a14 100%);
   }
 }
+
+.portrait-only-overlay { display: none; }
 
 /* Sayfa Kenarlarını Koruma (Notch & Bar) */
 .safe-padding {
