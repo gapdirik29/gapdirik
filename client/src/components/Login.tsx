@@ -1,23 +1,18 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Mail, Lock, User as UserIcon, ShieldCheck, ArrowRight, Ghost, Zap } from 'lucide-react';
 
 interface LoginProps {
   onLogin: (user: any) => void;
 }
 
 export function Login({ onLogin }: LoginProps) {
-  // sekmeler: login, register, forgot
   const [tab, setTab] = useState<'login' | 'register' | 'forgot'>('login');
-  // adımlar: form (giriş/kayıt formu), verify (kayıt onay kodu), email (şifremi unuttum e-posta sorma), reset (kod ve yeni şifre belirleme)
   const [step, setStep] = useState<'form' | 'verify' | 'email' | 'reset'>('form');
-
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  
-  // Backend'den gelecek kod doğrulaması için alınan kod
   const [userCode, setUserCode] = useState('');
-
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -30,23 +25,17 @@ export function Login({ onLogin }: LoginProps) {
     setUserCode('');
   };
 
-  // --- LOGIN FLOW ---
   const handleLogin = async () => {
-    if (!email || !password) return setError('Tüm alanları doldurun');
+    if (!email || !password) return setError('Lütfen tüm alanları doldurun.');
     setError(''); setLoading(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://gapdirik-backend.onrender.com';
       const res = await fetch(`${apiUrl}/api/auth/login`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email: email.toLowerCase().trim(), password })
       });
       const data = await res.json();
-      if (!res.ok) {
-        if (data.unverified) {
-           setMessage('Lütfen hesabınızı doğrulamak için kayıt ekranından tekrar giriş yapıp kod isteyin.');
-        }
-        throw new Error(data.error || 'Giriş başarısız');
-      }
+      if (!res.ok) throw new Error(data.error || 'Giriş yapılamadı.');
       localStorage.setItem('token', data.token);
       onLogin(data.user);
     } catch (err: any) {
@@ -56,21 +45,19 @@ export function Login({ onLogin }: LoginProps) {
     }
   };
 
-  // --- REGISTER FLOW (GÜVENLİ BACKEND ONAYLI) ---
   const handleRegisterCall = async () => {
-    if (!username || !email || !password) return setError('Tüm alanları doldurun');
+    if (!username || !email || !password) return setError('Tüm alanları doldurun!');
     setError(''); setLoading(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://gapdirik-backend.onrender.com';
       const res = await fetch(`${apiUrl}/api/auth/register-request`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password })
+        body: JSON.stringify({ username, email: email.toLowerCase().trim(), password })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Kayıt isteği başarısız');
-
+      if (!res.ok) throw new Error(data.error || 'İşlem sırasında bir hata oluştu');
       setStep('verify');
-      setMessage('E-posta adresinize 6 haneli bir doğrulama kodu gönderdik.');
+      setMessage('E-posta adresinize 6 haneli kod gönderildi.');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -79,17 +66,16 @@ export function Login({ onLogin }: LoginProps) {
   };
 
   const handleRegisterVerify = async () => {
-    if (!userCode || userCode.length < 6) return setError('Doğrulama kodunu eksiksiz girin');
+    if (!userCode || userCode.length < 6) return setError('Kodu eksiksiz girin.');
     setError(''); setLoading(true);
     try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const apiUrl = import.meta.env.VITE_API_URL || 'https://gapdirik-backend.onrender.com';
       const res = await fetch(`${apiUrl}/api/auth/register-verify`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code: userCode })
+        body: JSON.stringify({ email: email.toLowerCase().trim(), code: userCode })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Doğrulama başarısız');
-
+      if (!res.ok) throw new Error(data.error || 'Doğrulama başarısız.');
       localStorage.setItem('token', data.token);
       onLogin(data.user);
     } catch (err: any) {
@@ -99,173 +85,132 @@ export function Login({ onLogin }: LoginProps) {
     }
   };
 
-  // --- FORGOT PASSWORD FLOW (GÜVENLİ BACKEND ONAYLI) ---
-  const handleForgotCall = async () => {
-    if (!email) return setError('E-posta adresinizi girin');
-    setError(''); setLoading(true);
-    try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const res = await fetch(`${apiUrl}/api/auth/forgot-password`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'E-posta bulunamadı');
-
-      setStep('reset');
-      setMessage('Şifre sıfırlama kodunuz e-postanıza gönderildi.');
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleForgotExecute = async () => {
-    if (!userCode || !password) return setError('Kod ve yeni şifre alanlarını doldurun');
-    if (password.length < 6) return setError('Şifre en az 6 karakter olmalıdır');
-    setError(''); setLoading(true);
-    try {
-      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const res = await fetch(`${apiUrl}/api/auth/reset-password`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, code: userCode, newPassword: password })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Şifre sıfırlanamadı');
-
-      resetStates('login');
-      setMessage('Şifreniz başarıyla güncellendi. Yeni şifrenizle giriş yapabilirsiniz.');
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (tab === 'login') handleLogin();
-    else if (tab === 'register') {
-      if (step === 'form') handleRegisterCall();
-      else if (step === 'verify') handleRegisterVerify();
-    } else if (tab === 'forgot') {
-      if (step === 'email') handleForgotCall();
-      else if (step === 'reset') handleForgotExecute();
-    }
-  };
-
   return (
-    <div style={{
+    <div className="login-root" style={{
       position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', flexDirection: 'column',
-      alignItems: 'center', justifyContent: 'center',
-      background: 'radial-gradient(circle at center, #022b22 0%, #01140f 100%)',
-      fontFamily: '"Outfit", sans-serif'
+      alignItems: 'center', justifyContent: 'center', padding: '20px'
     }}>
+      {/* --- PREMİUM ARKA PLAN (Lüks Derinlik) --- */}
+      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', zIndex: -1 }}>
+        <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '40%', height: '40%', background: 'radial-gradient(circle, var(--accent-gold-glow) 0%, transparent 70%)', opacity: 0.3 }} />
+        <div style={{ position: 'absolute', bottom: '-10%', right: '-10%', width: '50%', height: '50%', background: 'radial-gradient(circle, rgba(0, 210, 255, 0.1) 0%, transparent 70%)', opacity: 0.3 }} />
+      </div>
+
       <motion.div
-        initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
-        style={{
-          background: 'rgba(255,255,255,0.03)', backdropFilter: 'blur(20px)', padding: '40px 50px',
-          borderRadius: 32, border: '1.5px solid rgba(255,215,0,0.2)', textAlign: 'center',
-          width: 400, boxShadow: '0 25px 50px rgba(0,0,0,0.5)', overflow: 'hidden', position: 'relative'
-        }}
+        initial={{ y: 30, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="glass-panel"
+        style={{ width: '100%', maxWidth: 440, padding: '40px 30px', textAlign: 'center', position: 'relative' }}
       >
-        <h1 style={{ color: '#ffcc00', fontSize: 42, fontWeight: 950, marginBottom: 8, letterSpacing: -1 }}>GAPDİRİK</h1>
-        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, marginBottom: 20, fontWeight: 500 }}>Türkiye'nin En Premium Gapdirik Deneyimi</p>
+        {/* LOGO BÖLÜMÜ */}
+        <div style={{ marginBottom: 30 }}>
+          <div style={{ width: 60, height: 60, background: 'linear-gradient(135deg, #ffcc00, #ff9500)', borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px', boxShadow: '0 8px 20px var(--accent-gold-glow)' }}>
+             <Zap size={32} color="#000" fill="#000" />
+          </div>
+          <h1 style={{ fontSize: 36, fontWeight: 950, letterSpacing: -1, color: 'var(--accent-gold)', margin: 0 }}>GAPDİRİK</h1>
+          <p style={{ fontSize: 13, opacity: 0.5, fontWeight: 600 }}>TÜRKİYE'NİN EN PREMİUM 101 DENEYİMİ</p>
+        </div>
 
+        {/* SEKME SEÇİCİ (GİRİŞ / KAYIT) */}
         {(tab === 'login' || tab === 'register') && step === 'form' && (
-          <div style={{ display: 'flex', gap: 10, marginBottom: 25, background: 'rgba(0,0,0,0.2)', padding: 5, borderRadius: 15 }}>
-             <button type="button" onClick={() => resetStates('login')} style={{ ...tabStyle(tab === 'login') }}>GİRİŞ YAP</button>
-             <button type="button" onClick={() => resetStates('register')} style={{ ...tabStyle(tab === 'register') }}>KAYIT OL</button>
+          <div style={{ display: 'flex', background: 'rgba(0,0,0,0.3)', padding: 5, borderRadius: 18, marginBottom: 25, border: '1px solid var(--glass-border)' }}>
+             <button onClick={() => resetStates('login')} style={tabStyle(tab === 'login')}>GİRİŞ</button>
+             <button onClick={() => resetStates('register')} style={tabStyle(tab === 'register')}>KAYIT</button>
           </div>
         )}
 
-        {tab === 'forgot' && (
-          <div style={{ display: 'flex', gap: 10, marginBottom: 25 }}>
-             <button type="button" onClick={() => resetStates('login')} style={{ ...tabStyle(false), flex: 'none', padding: '10px 20px' }}>GERİ</button>
-             <div style={{ ...tabStyle(true), padding: '10px 0', cursor: 'default' }}>ŞİFREMİ UNUTTUM</div>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 15 }}>
-          {error && <div style={{ background: 'rgba(232, 65, 24, 0.2)', color: '#e84118', padding: 10, borderRadius: 10, fontSize: 13, textAlign: 'center', fontWeight: 600 }}>{error}</div>}
-          {message && <div style={{ background: 'rgba(76, 209, 55, 0.2)', color: '#4cd137', padding: 10, borderRadius: 10, fontSize: 13, textAlign: 'center', fontWeight: 600 }}>{message}</div>}
+        <form onSubmit={(e) => { e.preventDefault(); tab === 'login' ? handleLogin() : step === 'form' ? handleRegisterCall() : handleRegisterVerify(); }} style={{ textAlign: 'left' }}>
           
-          <AnimatePresence mode="popLayout">
-            {tab === 'register' && step === 'form' && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
-                <label style={labelStyle}>KULLANICI ADI</label>
-                <input type="text" value={username} onChange={e => setUsername(e.target.value)} required style={inputStyle} placeholder="EfsaneOyuncu" />
-              </motion.div>
-            )}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={tab + step}
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              style={{ display: 'flex', flexDirection: 'column', gap: 18 }}
+            >
+              {error && <div className="dynamic-toast" style={{ position: 'relative', width: '100%', top: 0, padding: 12, marginBottom: 10, background: 'rgba(255,50,50,0.2)', color: '#ff4444', borderRadius: 14 }}>{error}</div>}
+              {message && <div className="dynamic-toast" style={{ position: 'relative', width: '100%', top: 0, padding: 12, marginBottom: 10, background: 'rgba(76,209,55,0.2)', color: '#4cd137', borderRadius: 14 }}>{message}</div>}
 
-            {(step === 'form' || step === 'email') && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
-                <label style={labelStyle}>E-POSTA</label>
-                <input type="email" value={email} onChange={e => setEmail(e.target.value)} required style={inputStyle} placeholder="ornek@mail.com" disabled={step !== 'form' && step !== 'email'} />
-              </motion.div>
-            )}
+              {tab === 'register' && step === 'form' && (
+                <div className="input-group">
+                   <label style={labelStyle}><UserIcon size={14} /> KULLANICI ADI</label>
+                   <input type="text" className="premium-input-custom" value={username} onChange={e => setUsername(e.target.value)} placeholder="Örn: MasterKing" required />
+                </div>
+              )}
 
-            {(step === 'form' && tab !== 'forgot') && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
-                <label style={labelStyle}>ŞİFRE</label>
-                <input type="password" value={password} onChange={e => setPassword(e.target.value)} required style={inputStyle} placeholder="••••••••" />
-              </motion.div>
-            )}
+              {step === 'form' && (
+                <div className="input-group">
+                   <label style={labelStyle}><Mail size={14} /> E-POSTA ADRESİ</label>
+                   <input type="email" className="premium-input-custom" value={email} onChange={e => setEmail(e.target.value)} placeholder="isminiz@mail.com" required />
+                </div>
+              )}
 
-            {(step === 'verify' || step === 'reset') && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
-                <label style={labelStyle}>DOĞRULAMA KODU (6 HANE)</label>
-                <input type="text" value={userCode} onChange={e => setUserCode(e.target.value)} maxLength={6} required style={{ ...inputStyle, textAlign: 'center', letterSpacing: 8, fontSize: 24, fontWeight: 'bold' }} placeholder="123456" />
-              </motion.div>
-            )}
+              {step === 'form' && (
+                <div className="input-group">
+                   <label style={labelStyle}><Lock size={14} /> ŞİFRE</label>
+                   <input type="password" className="premium-input-custom" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
+                </div>
+              )}
 
-            {step === 'reset' && (
-              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
-                <label style={labelStyle}>YENİ ŞİFRE</label>
-                <input type="password" value={password} onChange={e => setPassword(e.target.value)} required style={inputStyle} placeholder="Göndereceğimiz yeni şifre" />
-              </motion.div>
-            )}
+              {step === 'verify' && (
+                <div className="input-group">
+                   <label style={labelStyle}><ShieldCheck size={14} /> DOĞRULAMA KODU</label>
+                   <input type="text" className="premium-input-custom" maxLength={6} value={userCode} onChange={e => setUserCode(e.target.value)} placeholder="123456" style={{ textAlign: 'center', letterSpacing: 10, fontSize: 24, fontWeight: 900 }} required />
+                </div>
+              )}
+            </motion.div>
           </AnimatePresence>
 
-          {tab === 'login' && step === 'form' && (
-            <div style={{ textAlign: 'right' }}>
-              <span onClick={() => resetStates('forgot')} style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline' }}>Şifremi Unuttum</span>
-            </div>
-          )}
-
-          <button type="submit" className="gold-button" disabled={loading} style={{ width: '100%', padding: '16px 0', fontSize: 18, marginTop: 10, cursor: loading ? 'wait' : 'pointer', border: 'none', borderRadius: 15, background: '#ffd700', color: '#000', fontWeight: 'bold' }}>
-            {loading ? 'YÜKLENİYOR...' : 
-             step === 'verify' ? 'DOĞRULA' :
-             step === 'reset' ? 'YENİ ŞİFREYİ ONAYLA' :
-             tab === 'forgot' ? 'KOD GÖNDER' :
-             tab === 'login' ? 'GİRİŞ YAP' : 'ONAY KODU GÖNDER VE ÜYE OL'}
+          <button type="submit" className="btn-premium" disabled={loading} style={{ width: '100%', marginTop: 25, height: 55, fontSize: 16 }}>
+             {loading ? 'HAZIRLANIYOR...' : step === 'verify' ? 'HESABI ONAYLA' : tab === 'login' ? 'GİRİŞ YAP' : 'ÜYELİĞİ TAMAMLA'}
+             {!loading && <ArrowRight size={20} />}
           </button>
 
-          {tab === 'login' && step === 'form' && (
-            <button
-              type="button"
-              onClick={() => onLogin({ username: `Misafir-${Math.floor(1000 + Math.random() * 9000)}`, chips: 50000, isGuest: true })}
-              style={{ width: '100%', background: 'transparent', border: '1.5px solid rgba(255,255,255,0.1)', borderRadius: 15, padding: '12px 0', color: '#fff', fontWeight: 800, fontSize: 14, cursor: 'pointer', transition: '0.3s', marginTop: 5 }}
-            >
-               HESAPSIZ (MİSAFİR) DEVAM ET
+          {tab === 'login' && (
+            <button type="button" onClick={() => onLogin({ username: `Misafir-${Math.floor(1000 + Math.random() * 9000)}`, chips: 50000, isGuest: true })} className="btn-premium" style={{ width: '100%', marginTop: 12, background: 'rgba(255,255,255,0.05)', color: '#fff' }}>
+               <Ghost size={18} /> MİSAFİR OLARAK GİR
             </button>
+          )}
+
+          {tab === 'login' && (
+             <p style={{ textAlign: 'center', marginTop: 20, fontSize: 12, opacity: 0.5 }}>
+               Şifreni mi unuttun? <span style={{ color: 'var(--accent-gold)', fontWeight: 800, cursor: 'pointer' }} onClick={() => resetStates('forgot')}>YARDIM AL</span>
+             </p>
           )}
         </form>
       </motion.div>
+
+      <style>{`
+        .premium-input-custom {
+          width: 100%;
+          background: rgba(255,255,255,0.03);
+          border: 1.5px solid var(--glass-border);
+          border-radius: 16px;
+          padding: 16px 20px;
+          color: #fff;
+          font-size: 15px;
+          transition: 0.3s;
+        }
+        .premium-input-custom:focus {
+          border-color: var(--accent-gold);
+          background: rgba(255,215,0,0.05);
+          box-shadow: 0 0 15px var(--accent-gold-glow);
+        }
+      `}</style>
     </div>
   );
 }
 
 const tabStyle = (active: boolean) => ({
-  flex: 1, padding: '10px 0', borderRadius: 10, border: 'none',
-  background: active ? '#ffd700' : 'transparent', color: active ? '#000' : '#fff',
-  fontWeight: 800, cursor: 'pointer', transition: '0.3s' as const
+  flex: 1, padding: '12px 0', borderRadius: 14, border: 'none',
+  background: active ? 'var(--accent-gold)' : 'transparent',
+  color: active ? '#000' : '#888',
+  fontWeight: 900, fontSize: 13, cursor: 'pointer', transition: '0.3s'
 });
 
-const inputStyle = {
-  width: '100%', background: 'rgba(0,0,0,0.3)', border: '2px solid rgba(255,215,0,0.1)',
-  borderRadius: 15, padding: '14px 20px', color: '#fff', fontSize: 16, outline: 'none', transition: 'border 0.3s'
+const labelStyle = { 
+  display: 'flex', alignItems: 'center', gap: 8,
+  fontSize: 10, fontWeight: 950, color: 'var(--accent-gold)', 
+  marginBottom: 8, marginLeft: 5, letterSpacing: 1 
 };
-
-const labelStyle = { color: '#ffcc00', fontSize: 12, fontWeight: 800, marginLeft: 12, marginBottom: 6, display: 'block' };

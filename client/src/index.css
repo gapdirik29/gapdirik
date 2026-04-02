@@ -1,157 +1,182 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap');
 
 :root {
-  --table-green: #074a3b;
-  --table-dark: #032a21;
-  --gold-primary: #ffd700;
-  --gold-secondary: #b8860b;
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --player-active: #ffd700;
+  /* Premium Gapdirik Design Tokens */
+  --bg-main: #0a0e12;
+  --bg-card: rgba(255, 255, 255, 0.05); /* Ultra Thin Glass */
+  --accent-gold: #ffcc00;
+  --accent-gold-glow: rgba(255, 204, 0, 0.35);
+  --accent-blue: #00d2ff;
+  --text-white: #ffffff;
+  --text-dim: #a0a0a0;
   
-  /* Safe Area Insets for Mobile (iPhone Notch/Android Punch Hole) */
+  /* Precision Safe Area Insets */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
+  
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --radius-ios: 24px;
 }
 
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  user-select: none;
   -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none; /* Disable long-press menus */
-}
-
-html, body {
+  user-select: none;
   font-family: 'Outfit', sans-serif;
-  background-color: var(--table-dark);
-  color: #fff;
-  overflow: hidden;
-  height: 100vh;
+  outline: none;
+}
+
+html, body, #root {
   width: 100vw;
-  position: fixed; /* Prevent scrolling/bouncing on iOS */
-  touch-action: none; /* Disable all native touch gestures like pull-to-refresh */
+  height: 100vh;
+  background-color: var(--bg-main);
+  color: var(--text-white);
+  overflow: hidden;
+  position: fixed; /* iOS Scroll Bouncing Engelleme */
+  touch-action: none; /* Pull-to-refresh vb. iptal */
+  -webkit-font-smoothing: antialiased;
 }
 
-/* Scrollbar Hidden for Native Look */
-::-webkit-scrollbar {
-  display: none;
-}
-
-/* Performance Optimizations */
-.gpu-accel {
-  will-change: transform, opacity;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-}
-
-.low-perf-hide {
-  @media (max-device-width: 600px) {
-    backdrop-filter: none !important;
-    background: rgba(0,0,0,0.85) !important;
-  }
-}
-
-/* Gerçekçi Çuha Doku */
-.table-cloth {
-  position: fixed;
-  inset: 0;
-  background-color: var(--table-green);
-  background-image: 
-    radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.6) 100%),
-    url("https://www.transparenttextures.com/patterns/felt.png"); 
+/* Sayfa Arka Plan Katmanı (Derin Gradient) */
+body::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: radial-gradient(circle at 50% 20%, #152538 0%, #0a0e12 100%);
   z-index: -1;
 }
 
-/* Masa Kenarı (Ahşap Çerçeve) */
-.table-frame {
-  position: fixed;
-  top: calc(var(--safe-top) + 5px);
-  bottom: calc(var(--safe-bottom) + 5px);
-  left: calc(var(--safe-left) + 5px);
-  right: calc(var(--safe-right) + 5px);
-  border: 12px solid #1a0f0a;
-  border-radius: 35px;
-  box-shadow: 
-    inset 0 0 60px rgba(0,0,0,0.9),
-    0 0 40px rgba(0,0,0,0.6),
-    0 0 100px rgba(0,0,0,0.4);
-  pointer-events: none;
-  z-index: 5;
-}
-
-/* Premium Cam Kartlar */
+/* Premium Cam Paneller (Glassmorphism) */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(25px);
-  border: 1.5px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
-  box-shadow: 0 12px 48px rgba(0,0,0,0.5);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--bg-card);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-ios);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
 }
 
-/* Altın Buton Efekti */
-.gold-button {
-  background: linear-gradient(145deg, #ffd700 0%, #ff8f00 45%, #b8860b 100%);
+/* Apple Tarzı Premium Gold Buton */
+.btn-premium {
+  background: linear-gradient(135deg, #ffcc00 0%, #ff9500 100%);
   color: #000;
-  font-weight: 950;
-  text-transform: uppercase;
-  letter-spacing: 1.5px;
+  font-weight: 800;
   border: none;
-  border-radius: 40px;
-  box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4), inset 0 2px 3px rgba(255,255,255,0.6);
-  cursor: pointer;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  position: relative;
-  overflow: hidden;
+  border-radius: 16px;
+  padding: 14px 28px;
+  box-shadow: 0 8px 25px var(--accent-gold-glow);
+  transition: transform 0.2s cubic-bezier(0.19, 1, 0.22, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.gold-button::before {
-  content: '';
-  position: absolute;
-  top: 0; left: -100%;
-  width: 100%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-  transition: 0.5s;
+.btn-premium:active {
+  transform: scale(0.94);
 }
 
-.gold-button:hover::before {
-  left: 100%;
-}
-
-.gold-button:hover {
-  transform: translateY(-4px) scale(1.05);
-  box-shadow: 0 12px 30px rgba(255, 215, 0, 0.6);
-}
-
-.gold-button:active {
-  transform: translateY(0) scale(0.98);
-}
-
-/* Giriş Ekranı Tipografi */
-.title-glow {
-  text-shadow: 0 0 20px rgba(255, 215, 0, 0.5), 0 0 40px rgba(255, 215, 0, 0.3);
-}
-
-/* --- PREMIUM THEMES --- */
-.theme-default { background: radial-gradient(circle at center, #054d3b 0%, #011c16 100%); }
-.theme-casino { background: radial-gradient(circle at center, #350000 0%, #1a0000 100%) !important; }
-.theme-night { background: radial-gradient(circle at center, #1a1a2e 0%, #0f0f1a 100%) !important; }
-.theme-gold { background: radial-gradient(circle at center, #2c1810 0%, #000 100%) !important; }
-
-/* --- AI ADVISOR --- */
-.ai-advisor-panel {
-  background: rgba(0,0,0,0.85);
-  backdrop-filter: blur(15px);
-  border: 1.5px solid #ffd700;
-  border-radius: 18px;
-  padding: 15px;
-  color: #fff;
-  font-size: 12px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.6);
-  pointer-events: none;
+/* Mobil Alt Menü (App Feel) */
+.mobile-nav {
+  position: fixed;
+  bottom: 0; left: 0;
+  width: 100%;
+  height: calc(75px + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  background: rgba(10, 14, 18, 0.85);
+  backdrop-filter: blur(30px);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  border-top: 1px solid var(--glass-border);
   z-index: 1000;
+}
+
+/* Masa Üstü / Lobi Kart Tasarımları */
+.room-card-premium {
+  background: linear-gradient(145deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: background 0.3s;
+}
+
+.room-card-premium:active {
+  background: rgba(255,255,255,0.12);
+}
+
+/* Okey Taşı (Native 3D View) */
+.tile-3d {
+  width: 48px;
+  height: 68px;
+  background: #fbfbfb;
+  border-radius: 7px;
+  box-shadow: 
+    0 1px 0 #ddd,
+    0 2px 0 #d9d9d9,
+    0 3px 0 #ccc,
+    0 4px 0 #c9c9c9,
+    0 5px 0 #bbb,
+    0 8px 15px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: transform 0.1s;
+}
+
+.tile-3d:active {
+  transform: translateY(3px);
+  box-shadow: 0 2px 0 #bbb, 0 5px 10px rgba(0,0,0,0.25);
+}
+
+/* Lobi Kaydırma Alanı */
+.scroll-container {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-top: var(--safe-top);
+  padding-bottom: calc(100px + var(--safe-bottom));
+  padding-left: 20px;
+  padding-right: 20px;
+  height: 100vh;
+}
+
+/* Bildirim Hub (Dynamic Island Feel) */
+.dynamic-toast {
+  position: fixed;
+  top: calc(15px + var(--safe-top));
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%; max-width: 400px;
+  padding: 12px 20px;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(20px);
+  border-radius: 30px;
+  border: 1px solid var(--glass-border);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  z-index: 9999;
+  animation: dynamicIn 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+@keyframes dynamicIn {
+  from { transform: translate(-50%, -100px) scale(0.9); opacity: 0; }
+  to { transform: translate(-50%, 0) scale(1); opacity: 1; }
+}
+
+/* Saklı Scrollbar */
+::-webkit-scrollbar {
+  display: none;
 }

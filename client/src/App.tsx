@@ -19,6 +19,7 @@ import { StatusBar } from '@capacitor/status-bar';
 import { CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
 
 const isCapacitor = (window as any).Capacitor !== undefined;
+const APP_VERSION = 'v3.0.0 "HÜKÜMDAR"';
 
 export default function App() {
   const { socket, isConnected, setPlayerName, playerName } = useSocket();
@@ -162,6 +163,13 @@ export default function App() {
     };
     const handleGameOver = (data: any) => { setGameOverData(data); soundManager.play('winner'); };
     const handleChatMessage = (msg: any) => setChatMessages(prev => [...prev, msg].slice(-50));
+    const handleLevelUp = (data: any) => {
+       if (data.playerName === playerName) {
+          setUser((prev: any) => ({ ...prev, level: data.newLevel, xp: 0 }));
+          soundManager.play('win');
+          alert(`TEBRİKLER! LEVEL ${data.newLevel} OLDUNUZ!`); // Geliştirilebilir lüks modal için zemin
+       }
+    };
     
     socket.on('room_update', handleRoomUpdate);
     socket.on('your_hand', handleYourHand);
@@ -169,35 +177,250 @@ export default function App() {
     socket.on('game_update', handleGameUpdate);
     socket.on('tile_drawn', handleTileDrawn);
     socket.on('chat_message', handleChatMessage);
+    socket.on('player_level_up', handleLevelUp);
     socket.on('game_over', handleGameOver);
-    return () => { socket.off('room_update'); socket.off('your_hand'); socket.off('game_started'); socket.off('game_update'); socket.off('tile_drawn'); socket.off('chat_message'); socket.off('game_over'); };
+    return () => { 
+      socket.off('room_update'); socket.off('your_hand'); socket.off('game_started'); 
+      socket.off('game_update'); socket.off('tile_drawn'); socket.off('chat_message'); 
+      socket.off('player_level_up'); socket.off('game_over'); 
+    };
   }, [socket]);
 
-  const onLogin = useCallback((d: any) => { setPlayerName(d.username); setUser(d); setScreen('lobby'); localStorage.setItem('user', JSON.stringify(d)); }, [setPlayerName]);
-  const onJoinRoom = useCallback((r: string) => { setRoomId(r); setScreen('game'); socket?.emit('join_room', { roomId: r, playerName }); }, [socket, playerName]);
-  const handleWatchAd = () => { setIsAdLoading(true); setTimeout(() => { setIsAdLoading(false); setUser((prev: any) => ({ ...prev, chips: prev.chips + 5000 })); alert('5.000 Çip kazandınız!'); }, 3000); };
+  const onLogin = useCallback((d: any) => { 
+    setPlayerName(d.username); 
+    setUser(d); 
+    setScreen('lobby'); 
+    localStorage.setItem('user', JSON.stringify(d)); 
+  }, [setPlayerName]);
+
+  const onLogout = useCallback(() => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    setScreen('login');
+    soundManager.play('click');
+  }, []);
+
+  const onJoinRoom = useCallback((r: string) => { 
+    setRoomId(r); 
+    setScreen('game'); 
+    socket?.emit('join_room', { roomId: r, playerName }); 
+  }, [socket, playerName]);
+
+  const handleWatchAd = () => { 
+    setIsAdLoading(true); 
+    setTimeout(() => { 
+      setIsAdLoading(false); 
+      setUser((prev: any) => ({ ...prev, chips: prev.chips + 5000 })); 
+      alert('5.000 Çip kazandınız!'); 
+    }, 3000); 
+  };
   
   const hS = useMemo(() => findReadyMelds(hand, getOkeyInfo(gameState.indicator)), [hand, gameState.indicator]);
   const dblS = useMemo(() => findDoubles(hand.filter(Boolean) as TileData[], getOkeyInfo(gameState.indicator)), [hand, gameState.indicator]);
 
-  if (screen === 'login') return <Login onLogin={onLogin} />;
-  if (screen === 'payment-success') return <PaymentSuccessScreen />;
-  if (screen === 'lobby') return (
+  if (screen === 'login') return (
     <>
-      <Lobby playerName={playerName} userChips={user?.chips || 0} isGuest={user?.isGuest} onJoinRoom={onJoinRoom} onOpenStore={() => setIsStoreOpen(true)} onOpenRewardedAd={handleWatchAd} />
-      <AnimatePresence>{isStoreOpen && <Store onClose={() => setIsStoreOpen(false)} onPurchase={()=>{}} onWatchAd={handleWatchAd} isAdLoading={isAdLoading} />}</AnimatePresence>
+      <Login onLogin={onLogin} />
+      <div style={{ position: 'fixed', left: 10, bottom: 'calc(10px + var(--safe-bottom))', zIndex: 100000, pointerEvents: 'none', opacity: 0.3 }}>
+        <span style={{ fontSize: 9, fontWeight: 950, color: '#fff', letterSpacing: 2, background: 'rgba(0,0,0,0.4)', padding: '4px 10px', borderRadius: 20, whiteSpace: 'nowrap' }}>
+          {APP_VERSION}
+        </span>
+      </div>
+    </>
+  );
+  
+  if (screen === 'payment-success') return (
+    <>
+      <PaymentSuccessScreen />
+      <div style={{ position: 'fixed', left: 10, bottom: 'calc(10px + var(--safe-bottom))', zIndex: 100000, pointerEvents: 'none', opacity: 0.3 }}>
+        <span style={{ fontSize: 9, fontWeight: 950, color: '#fff', letterSpacing: 2, background: 'rgba(0,0,0,0.4)', padding: '4px 10px', borderRadius: 20, whiteSpace: 'nowrap' }}>
+          {APP_VERSION}
+        </span>
+      </div>
     </>
   );
 
+  if (screen === 'lobby') return (
+    <div style={{ width: '100vw', height: '100vh', background: 'var(--bg-main)' }}>
+      <Lobby 
+        playerName={playerName} 
+        userChips={user?.chips || 0} 
+        user={user}
+        isGuest={user?.isGuest || false} 
+        onJoinRoom={onJoinRoom} 
+        onLogout={onLogout}
+      />
+      <AnimatePresence>
+        {isStoreOpen && (
+          <Store 
+            onClose={() => setIsStoreOpen(false)} 
+            onPurchase={()=>{}} 
+            onWatchAd={handleWatchAd} 
+            isAdLoading={isAdLoading} 
+          />
+        )}
+      </AnimatePresence>
+      <div style={{ position: 'fixed', left: 10, bottom: 'calc(10px + var(--safe-bottom))', zIndex: 100000, pointerEvents: 'none', opacity: 0.3 }}>
+        <span style={{ fontSize: 9, fontWeight: 950, color: '#fff', letterSpacing: 2, background: 'rgba(0,0,0,0.4)', padding: '4px 10px', borderRadius: 20, whiteSpace: 'nowrap' }}>
+          {APP_VERSION}
+        </span>
+      </div>
+    </div>
+  );
+
   return (
-    <div className={`theme-${theme}`} style={{ position: 'fixed', inset: 0, fontFamily: '"Outfit", sans-serif', overflow: 'hidden' }}>
-      <div className="table-cloth" /><div className="table-frame" />
-      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-        <ScoreBoard indicator={gameState.indicator} highestSeriesValue={gameState.highestSeriesValue} highestDoublesValue={gameState.highestDoublesValue} players={gameState.players} roundNumber={gameState.roundNumber} />
-        {gameState.players.map((p, i) => <PlayerSeat key={p.id} player={p} position={(['bottom','right','top','left'] as const)[(i - gameState.players.findIndex(pl => pl.id === socket?.id) + 4) % 4]} isCurrentTurn={gameState.currentTurn === p.id} playerDiscards={allDiscards[p.id] || []} activeGifts={activeGifts.filter(g => g.receiverId === p.id)} onSendGift={(r, g) => socket?.emit('send_gift', { roomId, receiverId: r, giftType: g })} />)}
-        <TableCenter indicator={gameState.indicator} drawPileCount={gameState.drawPileCount} discardPile={gameState.discardPile} isMyTurn={gameState.currentTurn === socket?.id} hasDrawn={hasDrawn} canTakeDiscard={gameState.currentTurn === socket?.id && !hasDrawn} onTakeDiscard={() => socket?.emit('take_discard', { roomId })} onDraw={() => socket?.emit('draw_tile', { roomId })} onDiscard={()=>{}} tileSkin={tileSkin} />
-        <Rack hand={hand} selectedId={null} onSelectTile={()=>{}} onDoubleClickTile={(tId) => { if (gameState.currentTurn === socket?.id && hasDrawn) { socket?.emit('discard_tile', { roomId, tileId: tId }); setHand(prev => prev.map(t => t?.id === tId ? null : t)); setHasDrawn(false); } }} onMoveToSlot={(tId, targetIdx) => setHand(prev => { const s = prev.findIndex(t => t?.id === tId); if (s===-1) return prev; const n = [...prev]; const m = n[s]!; n[s] = n[targetIdx]; n[targetIdx] = m; return n; })} seriesPoints={hS.total} doublesPoints={dblS.total} handCount={hand.filter(Boolean).length} appendableTiles={[]} minMeldToOpen={gameState.highestSeriesValue} colorMult={getColorMultiplier(gameState.indicator)} canOpenSeries={gameState.currentTurn === socket?.id && hasDrawn && hS.total >= gameState.highestSeriesValue} canOpenDoubles={gameState.currentTurn === socket?.id && hasDrawn && (dblS.pairs.length >= 5 || dblS.total >= gameState.highestDoublesValue)} canPutBack={tookDiscard} onPutBack={()=>{}} onOpenSeries={() => socket?.emit('open_series', { roomId, melds: hS.melds })} onOpenDoubles={() => socket?.emit('open_doubles', { roomId, pairs: dblS.pairs })} onAppends={()=>{}} onSortDoubles={()=>{}} onSortSeries={()=>{}} tileSkin={tileSkin} highestSeriesValue={gameState.highestSeriesValue} highestDoublesValue={gameState.highestDoublesValue} tournamentScores={gameState.tournamentScores} />
-        {gameOverData && <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 100000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 20, backdropFilter: 'blur(15px)' }}><h2 style={{ color: '#ffd700', fontSize: 48, fontWeight: 950 }}>TUR SONA ERDİ</h2><div style={{ background: 'rgba(255,255,255,0.05)', padding: '40px 50px', borderRadius: 30, width: 550 }}>{gameOverData?.roundResults?.map((res: any) => (<div key={res.playerId} style={{ display: 'flex', justifyContent: 'space-between', padding: '18px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}><span style={{ color: '#fff', fontWeight: 800 }}>{res.playerName}</span><span style={{ color: res.score > 0 ? '#ff4444' : '#4cd137', fontWeight: 950 }}>{res.score > 0 ? `+${res.score}` : res.score}</span></div>))}</div><button onClick={() => { setGameOverData(null); socket?.emit('start_game', { roomId }); }} className="gold-button">SIRADAKİ EL</button></div>}
+    <div className={`theme-${theme}`} style={{ 
+      position: 'fixed', inset: 0, 
+      fontFamily: '"Outfit", sans-serif', overflow: 'hidden', 
+      background: 'radial-gradient(circle at center, #15352a 0%, #081a14 100%)' 
+    }}>
+      {/* PREMİUM MASA KATMANI */}
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.8, pointerEvents: 'none' }}>
+        <div style={{ position: 'absolute', inset: '15px', border: '2px solid rgba(255,215,0,0.05)', borderRadius: '40px' }} />
+      </div>
+
+      <div style={{ position: 'relative', width: '100%', height: '100%', paddingTop: 'var(--safe-top)', paddingBottom: 'var(--safe-bottom)' }}>
+        
+        {/* SKOR VE OYUN BİLGİSİ */}
+        <div style={{ position: 'absolute', top: 'calc(10px + var(--safe-top))', left: '50%', transform: 'translateX(-50%)', zIndex: 100 }}>
+          <ScoreBoard 
+            indicator={gameState.indicator} 
+            highestSeriesValue={gameState.highestSeriesValue} 
+            highestDoublesValue={gameState.highestDoublesValue} 
+            players={gameState.players} 
+            roundNumber={gameState.roundNumber} 
+          />
+        </div>
+
+        {/* OYUNCU KOLTUKLARI (4 KÖŞE SİMETRİSİ) */}
+        {gameState.players.map((p, i) => {
+          const seatLastMsg = chatMessages
+            .filter(m => m.senderName === p.name && (Date.now() - m.timestamp < 5000))
+            .pop()?.message;
+
+          return (
+            <PlayerSeat 
+              key={p.id} 
+              player={p} 
+              position={(['bottom','right','top','left'] as const)[(i - gameState.players.findIndex(pl => pl.id === socket?.id) + 4) % 4]} 
+              isCurrentTurn={gameState.currentTurn === p.id} 
+              playerDiscards={allDiscards[p.id] || []} 
+              activeGifts={activeGifts.filter(g => g.receiverId === p.id)} 
+              onSendGift={(r, g) => socket?.emit('send_gift', { roomId, receiverId: r, giftType: g })} 
+              lastMessage={seatLastMsg}
+            />
+          );
+        })}
+
+        {/* MASA MERKEZİ VE ISTAKA */}
+        <TableCenter 
+          indicator={gameState.indicator} 
+          drawPileCount={gameState.drawPileCount} 
+          discardPile={gameState.discardPile} 
+          isMyTurn={gameState.currentTurn === socket?.id} 
+          hasDrawn={hasDrawn} 
+          canTakeDiscard={gameState.currentTurn === socket?.id && !hasDrawn} 
+          onTakeDiscard={() => socket?.emit('take_discard', { roomId })} 
+          onDraw={() => socket?.emit('draw_tile', { roomId })} 
+          onDiscard={()=>{}} 
+          tileSkin={tileSkin} 
+        />
+        
+        <Rack 
+          hand={hand} 
+          selectedId={null} 
+          onSelectTile={()=>{}} 
+          onDoubleClickTile={(tId) => { 
+            if (gameState.currentTurn === socket?.id && hasDrawn) { 
+              socket?.emit('discard_tile', { roomId, tileId: tId }); 
+              setHand(prev => prev.map(t => t?.id === tId ? null : t)); 
+              setHasDrawn(false); 
+            } 
+          }} 
+          onMoveToSlot={(tId, targetIdx) => setHand(prev => { 
+            const s = prev.findIndex(t => t?.id === tId); 
+            if (s===-1) return prev; 
+            const n = [...prev]; 
+            const m = n[s]!; 
+            n[s] = n[targetIdx]; 
+            n[targetIdx] = m; 
+            return n; 
+          })} 
+          seriesPoints={hS.total} 
+          doublesPoints={dblS.total} 
+          handCount={hand.filter(Boolean).length} 
+          appendableTiles={[]} 
+          minMeldToOpen={gameState.highestSeriesValue} 
+          colorMult={getColorMultiplier(gameState.indicator)} 
+          canOpenSeries={gameState.currentTurn === socket?.id && hasDrawn && hS.total >= gameState.highestSeriesValue} 
+          canOpenDoubles={gameState.currentTurn === socket?.id && hasDrawn && (dblS.pairs.length >= 5 || dblS.total >= gameState.highestDoublesValue)} 
+          canPutBack={tookDiscard} 
+          onPutBack={()=>{}} 
+          onOpenSeries={() => socket?.emit('open_series', { roomId, melds: hS.melds })} 
+          onOpenDoubles={() => socket?.emit('open_doubles', { roomId, pairs: dblS.pairs })} 
+          onAppends={()=>{}} 
+          onSortDoubles={()=>{}} 
+          onSortSeries={()=>{}} 
+          tileSkin={tileSkin} 
+          highestSeriesValue={gameState.highestSeriesValue} 
+          highestDoublesValue={gameState.highestDoublesValue} 
+          tournamentScores={gameState.tournamentScores} 
+        />
+
+        {/* HUKUMDAR KISAYOL SOHBET HUB */}
+        <div style={{ position: 'fixed', left: 'calc(10px + var(--safe-left))', bottom: 'calc(130px + var(--safe-bottom))', display: 'flex', flexDirection: 'column', gap: 10, zIndex: 1000 }}>
+          {['Helal!', 'Tebrikler!', 'Hadi!', 'Okey Boşa!', 'Düşünme!', 'Nasip...'].map(msg => (
+            <motion.button
+              key={msg}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => { socket?.emit('send_message', { roomId, message: msg }); soundManager.play('click'); }}
+              style={{ background: 'rgba(255, 215, 0, 0.05)', border: '1px solid rgba(255, 215, 0, 0.2)', borderRadius: 12, padding: '6px 12px', color: '#fff', fontSize: 10, fontWeight: 900, whiteSpace: 'nowrap', backdropFilter: 'blur(10px)' }}
+            >
+              {msg}
+            </motion.button>
+          ))}
+        </div>
+
+        {/* MASADAN KALK BUTONU */}
+        <div style={{ position: 'fixed', right: 'calc(15px + var(--safe-right))', top: 'calc(15px + var(--safe-top))', zIndex: 1000 }}>
+           <button 
+             onClick={() => { setScreen('lobby'); soundManager.play('click'); }}
+             style={{ background: 'rgba(255, 0, 0, 0.1)', border: '1px solid rgba(255, 0, 0, 0.2)', borderRadius: 15, padding: '10px 15px', color: '#ff4444', fontSize: 12, fontWeight: 900, backdropFilter: 'blur(10px)' }}
+           >
+             MASADAN KALK
+           </button>
+        </div>
+
+        {/* TUR SONU EKRANI (LÜKS MODAL) */}
+        <AnimatePresence>
+          {gameOverData && (
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 100000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 20, backdropFilter: 'blur(15px)' }}
+            >
+              <h2 style={{ color: 'var(--accent-gold)', fontSize: 32, fontWeight: 950, marginBottom: 30 }}>TUR SONA ERDİ</h2>
+              <div className="glass-panel" style={{ padding: '30px 20px', width: '100%', maxWidth: 400 }}>
+                {gameOverData?.roundResults?.map((res: any) => (
+                  <div key={res.playerId} style={{ display: 'flex', justifyContent: 'space-between', padding: '15px 10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    <span style={{ color: '#fff', fontWeight: 800 }}>{res.playerName}</span>
+                    <span style={{ color: res.score > 0 ? '#ff4444' : '#4cd137', fontWeight: 950 }}>{res.score > 0 ? `+${res.score}` : res.score}</span>
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => { setGameOverData(null); socket?.emit('start_game', { roomId }); }} className="btn-premium" style={{ marginTop: 40, width: '100%', maxWidth: 300 }}>
+                SIRADAKİ EL <ArrowRight size={20} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        
+        {/* ASİL VERSİYON MÜHRÜ (Verification Tag) */}
+        <div style={{ position: 'fixed', left: 10, bottom: 'calc(10px + var(--safe-bottom))', zIndex: 100000, pointerEvents: 'none', opacity: 0.3 }}>
+           <span style={{ fontSize: 9, fontWeight: 950, color: '#fff', letterSpacing: 2, background: 'rgba(0,0,0,0.4)', padding: '4px 10px', borderRadius: 20, whiteSpace: 'nowrap' }}>
+             {APP_VERSION}
+           </span>
+        </div>
       </div>
     </div>
   );

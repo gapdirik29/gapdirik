@@ -24,6 +24,10 @@ class SoundManager {
       error: new Audio(`${base}/2580/2580-preview.mp3`),
       // Rakip Okey attığında çalacak özel dramatik ses
       okey: new Audio('https://www.soundjay.com/misc/sounds/bell-ringing-01.mp3'),
+      // Genel buton tıklama sesi (Premium UI Click)
+      click: new Audio('https://assets.mixkit.co/active_storage/sfx/2577/2577-preview.mp3'),
+      // El açma veya puan kazanma (Victory/Success)
+      success: new Audio('https://assets.mixkit.co/active_storage/sfx/2019/2019-preview.mp3'),
     };
 
     // Preload
