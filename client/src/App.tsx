@@ -16,9 +16,9 @@ import { soundManager } from './utils/soundManager';
 import { Store } from './components/Store';
 import { CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
 
-const APP_VERSION = 'v3.1.0 "HÜKÜMDAR PRIME"';
+const APP_VERSION = 'v3.2.0 "HÜKÜMDAR PRIME"';
 
-// --- ALT BİLEŞENLER (HOISTED - FIX #310) ---
+// --- ALT BİLEŞENLER (HOISTED) ---
 const PaymentSuccessScreen = ({ onLobbyReturn, onUpdateUser }: { onLobbyReturn: () => void, onUpdateUser: (chips: number) => void }) => {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [newBalance, setNewBalance] = useState<number>(0);
@@ -63,23 +63,15 @@ const PaymentSuccessScreen = ({ onLobbyReturn, onUpdateUser }: { onLobbyReturn: 
               </div>
             </>
           )}
-          {status === 'error' && (
-            <>
-              <div style={{ fontSize: 64 }}>❌</div>
-              <h2 style={{ fontSize: 24, fontWeight: 900 }}>HATA OLUŞTU</h2>
-              <button onClick={onLobbyReturn} className="gold-button" style={{ marginTop: 30 }}>LOBİYE DÖN</button>
-            </>
-          )}
         </motion.div>
     </div>
   );
 };
 
-// --- ANA UYGULAMA ---
 export default function App() {
   const { socket, playerName, setPlayerName } = useSocket();
   
-  // 1. TÜM KANCALAR (EN TEPEDE - SARSILMAZ SIRALAMA)
+  // 1. TÜM KANCALAR (EN TEPEDE - FIXED ORDER)
   const [screen, setScreen] = useState<'login' | 'lobby' | 'game' | 'result' | 'payment-success'>('login');
   const [user, setUser] = useState<any>(null);
   const [roomId, setRoomId] = useState<string>('');
@@ -94,7 +86,6 @@ export default function App() {
   });
   const [chatMessages, setChatMessages] = useState<{senderName: string; message: string; timestamp: number}[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [uiScale, setUiScale] = useState(1.0);
   const [isStoreOpen, setIsStoreOpen] = useState(false);
   const [isAdLoading, setIsAdLoading] = useState(false);
   const [theme] = useState<'default' | 'casino' | 'night' | 'gold'>('default');
@@ -103,15 +94,7 @@ export default function App() {
   const [gameOverData, setGameOverData] = useState<any>(null);
   const [activeGifts] = useState<any[]>([]);
 
-  // 2. OTURUM & URL KONTROLÜ
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('session_id')) setScreen('payment-success');
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) { /* Optional: Auto-login logic */ }
-  }, []);
-
-  // 3. SOCKET DINLEYICILERI
+  // 2. SOCKET DINLEYICILERI
   useEffect(() => {
     if (!socket) return;
     const handlers = {
@@ -138,12 +121,10 @@ export default function App() {
       chat_message: (msg: any) => setChatMessages(prev => [...prev, msg].slice(-50)),
       game_over: (data: any) => { setGameOverData(data); soundManager.play('winner'); }
     };
-
     Object.entries(handlers).forEach(([evt, fn]) => socket.on(evt, fn));
     return () => { Object.entries(handlers).forEach(([evt, fn]) => socket.off(evt, fn)); };
   }, [socket, playerName]);
 
-  // 4. AKSİYONLAR
   const onLogin = useCallback((d: any) => { setPlayerName(d.username); setUser(d); setScreen('lobby'); localStorage.setItem('user', JSON.stringify(d)); }, [setPlayerName]);
   const onLogout = useCallback(() => { localStorage.removeItem('token'); localStorage.removeItem('user'); setUser(null); setScreen('login'); }, []);
   const onJoinRoom = useCallback((r: string) => { setRoomId(r); setScreen('game'); socket?.emit('join_room', { roomId: r, playerName }); }, [socket, playerName]);
@@ -154,7 +135,6 @@ export default function App() {
 
   const getSeat = useCallback((posStr: 'bottom' | 'right' | 'top' | 'left') => {
     const myIdx = gameState.players.findIndex(p => p.id === socket?.id);
-    if (myIdx === -1 && posStr === 'bottom' && playerName) { /* Spectatator Logic Placeholder */ }
     const targetIdx = (myIdx + (posStr === 'bottom' ? 0 : posStr === 'right' ? 1 : posStr === 'top' ? 2 : 3)) % Math.max(1, gameState.players.length);
     const p = gameState.players[targetIdx];
     if (!p) return null;
@@ -168,13 +148,12 @@ export default function App() {
         lastMessage={seatLastMsg}
       />
     );
-  }, [gameState.players, socket?.id, chatMessages, allDiscards, activeGifts, roomId, socket, playerName]);
+  }, [gameState.players, socket?.id, chatMessages, allDiscards, activeGifts, roomId, socket]);
 
-  // 5. TEK DÖNÜŞ (SINGLE RETURN) - FIX #310
+  // 5. TEK DÖNÜŞ (GÖRSELDEKİ SABİT YERLEŞİM)
   return (
-    <div className={`theme-${theme} game-layout`} style={{ fontSize: `calc(${uiScale} * 1.25vmax)` }}>
+    <div className={`theme-${theme} game-layout`}>
       
-      {/* EKRAN KATMANLARI (ANCak BİRİ GÖRÜNÜR) */}
       <AnimatePresence mode="wait">
         {screen === 'login' && (
           <motion.div key="login" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, zIndex: 100000 }}>
@@ -194,47 +173,62 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* OYUN EKRANI (GEREKTİĞİNDE RENDER EDİLİR) */}
       {(screen === 'game' || screen === 'result') && (
-        <div key="game-ui" style={{ width: '100%', height: '100%', display: 'grid', gridTemplateAreas: '"header header header" "left-player center-board right-player" "rack-footer rack-footer rack-footer"', gridTemplateRows: 'auto 1fr auto', gridTemplateColumns: 'auto 1fr auto' }}>
-          
-          {/* TASARIM ARAÇLARI */}
-          <div style={{ position: 'fixed', top: '0.2rem', left: '50%', transform: 'translateX(-50%)', zIndex: 10000, display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.4rem 1rem', background: 'rgba(0,0,0,0.8)', border: '1px solid var(--accent-gold)', borderRadius: '2rem', backdropFilter: 'blur(10px)' }}>
-             <span style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--accent-gold)' }}>TASARIM MODU (UI BOYUTU):</span>
-             <input type="range" min="0.5" max="1.5" step="0.05" value={uiScale} onChange={(e) => setUiScale(parseFloat(e.target.value))} style={{ width: '8rem', accentColor: 'var(--accent-gold)' }} />
-             <span style={{ fontSize: '0.6rem', fontWeight: 950, color: '#fff' }}>%{Math.round(uiScale * 100)}</span>
-          </div>
+        <>
+          {/* HEADER (SCOREBOARD + KALK) */}
+          <header className="header-stats" style={{ zIndex: 2000, gridArea: 'header', justifyContent: 'space-between' }}>
+            <div style={{ transformOrigin: 'top left' }}>
+              <ScoreBoard indicator={gameState.indicator} highestSeriesValue={gameState.highestSeriesValue} highestDoublesValue={gameState.highestDoublesValue} players={gameState.players} roundNumber={gameState.roundNumber} />
+            </div>
+            <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
+              <button onClick={() => { setScreen('lobby'); soundManager.play('click'); }} className="btn-premium" style={{ background: 'rgba(255,0,0,0.15)', border: '1px solid rgba(255,0,0,0.3)', color: '#ff4d4d' }}>KALK</button>
+            </div>
+          </header>
 
-          <motion.header drag dragMomentum={false} className="header-stats" style={{ zIndex: 2000, cursor: 'move', gridArea: 'header' }}>
-            <ScoreBoard indicator={gameState.indicator} highestSeriesValue={gameState.highestSeriesValue} highestDoublesValue={gameState.highestDoublesValue} players={gameState.players} roundNumber={gameState.roundNumber} />
-            <button onClick={() => { setScreen('lobby'); soundManager.play('click'); }} className="btn-premium" style={{ background: 'rgba(255,0,0,0.15)', border: '1px solid rgba(255,0,0,0.3)', color: '#ff4d4d' }}>KALK</button>
-          </motion.header>
-
-          <motion.aside drag dragMomentum={false} style={{ gridArea: 'left-player', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1500, cursor: 'move' }}>{getSeat('left')}</motion.aside>
+          {/* PLAYERS */}
+          <aside style={{ gridArea: 'left-player', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{getSeat('left')}</aside>
           
-          <motion.main drag dragMomentum={false} className="center-board-area" style={{ gridArea: 'center-board', zIndex: 1400, cursor: 'move' }}>
+          <main className="center-board-area" style={{ gridArea: 'center' }}>
              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', width: '100%' }}>
                 <div style={{ height: '8rem', display: 'flex', alignItems: 'center' }}>{getSeat('top')}</div>
                 <TableCenter indicator={gameState.indicator} drawPileCount={gameState.drawPileCount} discardPile={gameState.discardPile} isMyTurn={gameState.currentTurn === socket?.id} hasDrawn={hasDrawn} canTakeDiscard={gameState.currentTurn === socket?.id && !hasDrawn} onTakeDiscard={() => socket?.emit('take_discard', { roomId })} onDraw={() => socket?.emit('draw_tile', { roomId })} onDiscard={()=>{}} tileSkin={tileSkin} />
              </div>
-          </motion.main>
+          </main>
 
-          <motion.aside drag dragMomentum={false} style={{ gridArea: 'right-player', display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem', zIndex: 1500, cursor: 'move' }}>
-             {getSeat('right')}
-             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', paddingRight: '0.5rem' }}>
-                {['Helal!', 'Hadi!', 'Okey Boşa!', 'Nasip...'].map(msg => (
-                  <motion.button key={msg} whileTap={{ scale: 0.9 }} onClick={() => { socket?.emit('send_message', { roomId, message: msg }); soundManager.play('click'); }} className="glass-panel" style={{ padding: '0.4rem 0.8rem', fontSize: '0.65rem', color: '#fff', fontWeight: 900, whiteSpace: 'nowrap', borderRadius: '0.8rem', border: '1px solid rgba(255,255,255,0.08)' }}>{msg}</motion.button>
-                ))}
+          <aside style={{ gridArea: 'right-player', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{getSeat('right')}</aside>
+
+          {/* FOOTER LEFT (DURUM PANELI) */}
+          <div style={{ position: 'fixed', bottom: '1.5rem', left: '1.5rem', zIndex: 1000, display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+             <div className="glass-panel" style={{ padding: '0.5rem 1rem', display: 'flex', gap: '1rem', fontSize: '0.7rem', fontWeight: 900 }}>
+                <span style={{ color: '#ffcc00' }}>BARAJ: {gameState.highestSeriesValue}</span>
+                <span style={{ color: '#fff' }}>ELİM: {hS.total}</span>
              </div>
-          </motion.aside>
+             <div className="glass-panel" style={{ padding: '0.4rem 1rem', textAlign: 'center', fontSize: '0.65rem', fontWeight: 900, color: '#fff', cursor: 'pointer' }}>
+                YAZBOZ ⌃
+             </div>
+          </div>
 
-          <footer className="rack-footer" style={{ gridArea: 'rack-footer' }}>
+          {/* FOOTER CENTER (USER + RACK) */}
+          <footer className="rack-footer" style={{ gridArea: 'footer' }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: '0.5rem' }}>
-               <motion.div drag dragMomentum={false} style={{ transform: 'scale(0.8)', marginBottom: '-1rem', zIndex: 1600, cursor: 'move' }}>{getSeat('bottom')}</motion.div>
+               <div style={{ transform: 'scale(0.8)', marginBottom: '-0.5rem', zIndex: 1600 }}>{getSeat('bottom')}</div>
                <Rack hand={hand} selectedId={selectedId} onSelectTile={setSelectedId} onDoubleClickTile={(tId) => { if (gameState.currentTurn === socket?.id && hasDrawn) { socket?.emit('discard_tile', { roomId, tileId: tId }); setHand(prev => prev.map(t => t?.id === tId ? null : t)); setHasDrawn(false); } }} onMoveToSlot={(tId, targetIdx) => setHand(prev => { const s = prev.findIndex(t => t?.id === tId); if (s===-1) return prev; const n = [...prev]; const m = n[s]! ; n[s] = n[targetIdx]; n[targetIdx] = m; return n; })} seriesPoints={hS.total} doublesPoints={dblS.total} handCount={hand.filter(Boolean).length} appendableTiles={[]} minMeldToOpen={gameState.highestSeriesValue} colorMult={getColorMultiplier(gameState.indicator)} canOpenSeries={gameState.currentTurn === socket?.id && hasDrawn && hS.total >= gameState.highestSeriesValue} canOpenDoubles={gameState.currentTurn === socket?.id && hasDrawn && (dblS.pairs.length >= 5 || dblS.total >= gameState.highestDoublesValue)} canPutBack={tookDiscard} onPutBack={()=>{}} onOpenSeries={() => socket?.emit('open_series', { roomId, melds: hS.melds })} onOpenDoubles={() => socket?.emit('open_doubles', { roomId, pairs: dblS.pairs })} onAppends={()=>{}} onSortDoubles={()=>{}} onSortSeries={()=>{}} tileSkin={tileSkin} highestSeriesValue={gameState.highestSeriesValue} highestDoublesValue={gameState.highestDoublesValue} tournamentScores={gameState.tournamentScores} />
             </div>
           </footer>
-        </div>
+
+          {/* FOOTER RIGHT (SOCIAL + TILE COUNTER) */}
+          <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 1000, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.8rem' }}>
+             <div style={{ display: 'flex', gap: '0.4rem' }}>
+                {['Helal!', 'Hadi!'].map(msg => (
+                  <button key={msg} onClick={() => socket?.emit('send_message', { roomId, message: msg })} className="glass-panel" style={{ padding: '0.4rem 0.8rem', fontSize: '0.6rem', color: '#fff', fontWeight: 900, border: 'none' }}>{msg}</button>
+                ))}
+             </div>
+             <div className="glass-panel" style={{ width: '4rem', height: '4rem', borderRadius: '50%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--accent-gold)' }}>
+                <span style={{ fontSize: '1.2rem', fontWeight: 950, color: 'var(--accent-gold)' }}>0</span>
+                <span style={{ fontSize: '0.5rem', fontWeight: 900, opacity: 0.8 }}>TAŞ</span>
+             </div>
+          </div>
+        </>
       )}
 
       {/* SONUÇ MODALI */}
@@ -255,9 +249,8 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* ALT VERSİYON ETİKETİ */}
-      <div style={{ position: 'fixed', left: '1rem', bottom: 'calc(0.5rem + var(--safe-bottom))', zIndex: 100000, pointerEvents: 'none', opacity: 0.3 }}>
-         <span style={{ fontSize: '0.6rem', fontWeight: 950, color: '#fff', letterSpacing: 2 }}>{APP_VERSION}</span>
+      <div style={{ position: 'fixed', left: '1rem', bottom: '0.2rem', zIndex: 100000, pointerEvents: 'none', opacity: 0.2 }}>
+         <span style={{ fontSize: '0.5rem', fontWeight: 950, color: '#fff' }}>{APP_VERSION}</span>
       </div>
     </div>
   );
