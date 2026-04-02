@@ -16,7 +16,7 @@ import { soundManager } from './utils/soundManager';
 import { Store } from './components/Store';
 import { CheckCircle, ArrowRight, Loader2, User, LayoutDashboard, Settings, MessageSquare } from 'lucide-react';
 
-const APP_VERSION = 'v3.2.0 "HÜKÜMDAR PRIME"';
+const APP_VERSION = 'v3.2.1 "HÜKÜMDAR PRIME" (ELITE PRO BUILD)';
 
 // --- ALT BİLEŞENLER (HOISTED) ---
 const PaymentSuccessScreen = ({ onLobbyReturn, onUpdateUser }: { onLobbyReturn: () => void, onUpdateUser: (chips: number) => void }) => {
@@ -205,7 +205,7 @@ export default function App() {
 
           <main style={{ flex: 1, position: 'relative', marginTop: '3.8rem' }}>
             {/* LOBY / SALONLAR BUTTONS (FLOATING GLASS) */}
-            <div style={{ position: 'absolute', top: '1.5rem', left: '1.5rem', zIndex: 2000, display: 'flex', flexLines: 'column', gap: '1rem' }}>
+            <div style={{ position: 'absolute', top: '1.5rem', left: '1.5rem', zIndex: 2000, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                <button className="glass-panel" style={{ padding: '0.8rem 1.4rem', color: '#fff', fontSize: '0.7rem', fontWeight: 1000, display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   <LayoutDashboard size={18} /> SALONLAR
                </button>
@@ -256,7 +256,7 @@ export default function App() {
 
           {/* RACK FOOTER (AUTO OVERLAP) */}
           <footer style={{ position: 'relative', zIndex: 3000 }}>
-             <Rack hand={hand} selectedId={selectedId} onSelectTile={setSelectedId} onDoubleClickTile={(tId) => { if (gameState.currentTurn === socket?.id && hasDrawn) { socket?.emit('discard_tile', { roomId, tileId: tId }); setHand(prev => prev.map(t => t?.id === tId ? null : t)); setHasDrawn(false); } }} onMoveToSlot={(tId, targetIdx) => setHand(prev => { const s = prev.findIndex(t => t?.id === tId); if (s===-1) return prev; const n = [...prev]; const m = n[s]! ; n[s] = n[targetIdx]; n[targetIdx] = m; return n; })} seriesPoints={hS.total} doublesPoints={dblS.total} handCount={hand.filter(Boolean).length} appendableTiles={[]} minMeldToOpen={gameState.highestSeriesValue} colorMult={getColorMultiplier(gameState.indicator)} canOpenSeries={gameState.currentTurn === socket?.id && hasDrawn && hS.total >= gameState.highestSeriesValue} canOpenDoubles={gameState.currentTurn === socket?.id && hasDrawn && (dblS.pairs.length >= 5 || dblS.total >= gameState.highestDoublesValue)} canPutBack={tookDiscard} onPutBack={()=>{}} onOpenSeries={() => socket?.emit('open_series', { roomId, melds: hS.melds })} onOpenDoubles={() => socket?.emit('open_doubles', { roomId, pairs: dblS.pairs })} onAppends={()=>{}} onSortDoubles={()=>{}} onSortSeries={()=>{}} tileSkin={null} highestSeriesValue={gameState.highestSeriesValue} highestDoublesValue={gameState.highestDoublesValue} tournamentScores={gameState.tournamentScores} />
+             <Rack hand={hand} selectedId={selectedId} onSelectTile={setSelectedId} onDoubleClickTile={(tId) => { if (gameState.currentTurn === socket?.id && hasDrawn) { socket?.emit('discard_tile', { roomId, tileId: tId }); setHand(prev => prev.map(t => t?.id === tId ? null : t)); setHasDrawn(false); } }} onMoveToSlot={(tId, targetIdx) => setHand(prev => { const s = prev.findIndex(t => t?.id === tId); if (s===-1) return prev; const n = [...prev]; const m = n[s]! ; n[s] = n[targetIdx]; n[targetIdx] = m; return n; })} seriesPoints={hS.total} doublesPoints={dblS.total} handCount={hand.filter(Boolean).length} appendableTiles={[]} minMeldToOpen={gameState.highestSeriesValue} colorMult={getColorMultiplier(gameState.indicator)} canOpenSeries={gameState.currentTurn === socket?.id && hasDrawn && hS.total >= gameState.highestSeriesValue} canOpenDoubles={gameState.currentTurn === socket?.id && hasDrawn && (dblS.pairs.length >= 5 || dblS.total >= gameState.highestDoublesValue)} canPutBack={tookDiscard} onPutBack={()=>{}} onOpenSeries={() => socket?.emit('open_series', { roomId, melds: hS.melds })} onOpenDoubles={() => socket?.emit('open_doubles', { roomId, pairs: dblS.pairs })} onAppends={()=>{}} onSortDoubles={()=>{}} onSortSeries={()=>{}} tileSkin={undefined} highestSeriesValue={gameState.highestSeriesValue} highestDoublesValue={gameState.highestDoublesValue} tournamentScores={gameState.tournamentScores} />
           </footer>
         </div>
       )}
