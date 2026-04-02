@@ -293,10 +293,24 @@ export default function App() {
     </div>
   );
 
+  const [uiScale, setUiScale] = useState(1.0); // Hükümdar Ölçekleme Silsilesi
+
   return (
-    <div className={`theme-${theme} game-layout`}>
-      {/* ÜST PANEL (SABİTLENDİ) */}
-      <header className="header-stats" style={{ zIndex: 2000 }}>
+    <div className={`theme-${theme} game-layout`} style={{ fontSize: `calc(${uiScale} * 1.25vmax)` }}>
+      
+      {/* HÜKÜMDAR TASARIM STÜDYOSU (ÖLÇEK SÜRGÜSÜ) */}
+      <div style={{ position: 'fixed', top: '0.2rem', left: '50%', transform: 'translateX(-50%)', zIndex: 10000, display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.4rem 1rem', background: 'rgba(0,0,0,0.8)', border: '1px solid var(--accent-gold)', borderRadius: '2rem', backdropFilter: 'blur(10px)' }}>
+         <span style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--accent-gold)' }}>TASARIM MODU (UI BOYUTU):</span>
+         <input 
+            type="range" min="0.5" max="1.5" step="0.05" 
+            value={uiScale} onChange={(e) => setUiScale(parseFloat(e.target.value))} 
+            style={{ width: '8rem', accentColor: 'var(--accent-gold)' }}
+         />
+         <span style={{ fontSize: '0.6rem', fontWeight: 950, color: '#fff' }}>%{Math.round(uiScale * 100)}</span>
+      </div>
+
+      {/* ÜST PANEL (DRAGGABLE) */}
+      <motion.header drag dragMomentum={false} className="header-stats" style={{ zIndex: 2000, cursor: 'move' }}>
         <ScoreBoard 
           indicator={gameState.indicator} 
           highestSeriesValue={gameState.highestSeriesValue} 
@@ -311,15 +325,15 @@ export default function App() {
         >
           KALK
         </button>
-      </header>
+      </motion.header>
 
-      {/* SOL OYUNCU (SABİTLENDİ) */}
-      <aside style={{ gridArea: 'left-player', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1500 }}>
+      {/* SOL OYUNCU (DRAGGABLE) */}
+      <motion.aside drag dragMomentum={false} style={{ gridArea: 'left-player', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1500, cursor: 'move' }}>
          {getSeat('left')}
-      </aside>
+      </motion.aside>
 
-      {/* OYUN MERKEZİ (SABİTLENDİ) */}
-      <main className="center-board-area" style={{ zIndex: 1400 }}>
+      {/* OYUN MERKEZİ (DRAGGABLE) */}
+      <motion.main drag dragMomentum={false} className="center-board-area" style={{ zIndex: 1400, cursor: 'move' }}>
          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', width: '100%' }}>
             <div style={{ height: '8rem', display: 'flex', alignItems: 'center' }}>
                {getSeat('top')}
@@ -337,10 +351,10 @@ export default function App() {
               tileSkin={tileSkin} 
             />
          </div>
-      </main>
+      </motion.main>
 
-      {/* SAĞ OYUNCU + SOSYAL HUB (SABİTLENDİ - DİKEY) */}
-      <aside style={{ gridArea: 'right-player', display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem', zIndex: 1500 }}>
+      {/* SAĞ OYUNCU + SOSYAL HUB (DRAGGABLE) */}
+      <motion.aside drag dragMomentum={false} style={{ gridArea: 'right-player', display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem', zIndex: 1500, cursor: 'move' }}>
          {getSeat('right')}
          
          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', paddingRight: '0.5rem' }}>
@@ -353,14 +367,14 @@ export default function App() {
               </motion.button>
             ))}
          </div>
-      </aside>
+      </motion.aside>
 
-      {/* ISTAKA ALANI (ALT OYUNCU + ISTAKA) */}
+      {/* ISTAKA ALANI (DRAGGABLE - ALT OYUNCU) */}
       <footer className="rack-footer">
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: '0.5rem' }}>
-           <div style={{ transform: 'scale(0.8)', marginBottom: '-1rem', zIndex: 1600 }}>
+           <motion.div drag dragMomentum={false} style={{ transform: 'scale(0.8)', marginBottom: '-1rem', zIndex: 1600, cursor: 'move' }}>
               {getSeat('bottom')}
-           </div>
+           </motion.div>
            
            <Rack 
              hand={hand} 
