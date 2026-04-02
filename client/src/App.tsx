@@ -57,6 +57,8 @@ export default function App() {
   const [chatMessages, setChatMessages] = useState<{senderName: string; message: string; timestamp: number}[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  const [uiScale, setUiScale] = useState(1.0); // Hükümdar Ölçekleme Silsilesi (En Tepeye Taşındı - Fix #310)
+
   // 0. Oturum Kontrolü & Ödeme Yönlendirme Kontrolü
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
@@ -292,8 +294,6 @@ export default function App() {
       </div>
     </div>
   );
-
-  const [uiScale, setUiScale] = useState(1.0); // Hükümdar Ölçekleme Silsilesi
 
   return (
     <div className={`theme-${theme} game-layout`} style={{ fontSize: `calc(${uiScale} * 1.25vmax)` }}>
