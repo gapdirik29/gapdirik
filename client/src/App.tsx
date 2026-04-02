@@ -343,12 +343,12 @@ export default function App() {
       <aside style={{ gridArea: 'right-player', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
          {getSeat('right')}
          
-         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', justifyContent: 'center', padding: '0.5rem' }}>
+         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginLeft: 'auto', paddingRight: '0.5rem' }}>
             {['Helal!', 'Hadi!', 'Okey Boşa!', 'Nasip...'].map(msg => (
               <motion.button key={msg} whileTap={{ scale: 0.9 }} 
                 onClick={() => { socket?.emit('send_message', { roomId, message: msg }); soundManager.play('click'); }}
                 className="glass-panel" 
-                style={{ padding: '0.4rem 0.6rem', fontSize: '0.6rem', color: '#fff', fontWeight: 900, whiteSpace: 'nowrap', borderRadius: '0.8rem' }}>
+                style={{ padding: '0.4rem 0.8rem', fontSize: '0.65rem', color: '#fff', fontWeight: 900, whiteSpace: 'nowrap', borderRadius: '0.8rem', border: '1px solid rgba(255,255,255,0.08)' }}>
                 {msg}
               </motion.button>
             ))}

@@ -50,9 +50,13 @@ export const Lobby: React.FC<LobbyProps> = ({ playerName, userChips, user, isGue
     // GÜNLÜK HEDİYE KONTROLÜ
     const checkBonus = async () => {
        try {
+          const token = localStorage.getItem('token');
           const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://192.168.1.104:10000'}/api/auth/daily-bonus`, {
              method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
+             headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+             },
              body: JSON.stringify({ userId: user._id })
           });
           const data = await res.json();
