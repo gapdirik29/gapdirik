@@ -1,19 +1,22 @@
-import { TileData, TileColor } from './gameEngine';
+import { TileData, TileColor } from './gameEngine.js';
+import { findMelds, findDoubles, getOkeyInfo } from './winChecker.js';
 
 /**
- * Bot Yapay Zekası
- * Strateji: Seri ve çiftleri tespit edip, en az değerli/işe yaramaz taşı atar.
+ * Bot Yapay Zekası - PRO MAESTRO Sürümü
+ * Strateji: Fırsatçı (Discard Pick), Stratejik Atış ve Seri Korumalı.
  */
 export class BotAI {
   private hand: TileData[];
   private okeyNumber: number;
   private okeyColor: TileColor;
+  private indicator: TileData;
 
   constructor(hand: TileData[], indicator: TileData) {
     this.hand = [...hand];
-    // Göstergelik'in bir üstü = okey
-    this.okeyNumber = indicator.number === 13 ? 1 : indicator.number + 1;
-    this.okeyColor = indicator.color;
+    this.indicator = indicator;
+    const okey = getOkeyInfo(indicator);
+    this.okeyNumber = okey.number;
+    this.okeyColor = okey.color;
   }
 
   private isOkey(t: TileData): boolean {
@@ -21,87 +24,90 @@ export class BotAI {
   }
 
   /**
-   * Gruplanabilirlik skoru: seri ya da çified içindeyse değerli
+   * Yerden gelen taşı alayım mı? (Kapsın mı?) 
    */
-  private scoreGroups(): Map<string, number> {
+  public shouldPickDiscard(discarded: TileData, currentOpeningBaraj: number, hasOpened: boolean): boolean {
+    const okey = { number: this.okeyNumber, color: this.okeyColor };
+    
+    // 1. Okey ise MUTLAKA AL (Asla kaçırma)
+    if (this.isOkey(discarded)) return true;
+
+    // 2. Halihazırda açıksa ve işleyebiliyorsa al
+    if (hasOpened) {
+       const tempHand = [...this.hand, discarded];
+       const newMelds = findMelds(tempHand, okey);
+       const oldMelds = findMelds(this.hand, okey);
+       if (newMelds.total > oldMelds.total) return true;
+    }
+
+    // 3. Henüz açmamışsa ve bu taşla barajı geçiyorsa al
+    if (!hasOpened) {
+       const tempHand = [...this.hand, discarded];
+       const res = findMelds(tempHand, okey);
+       const resD = findDoubles(tempHand, okey);
+       if (res.total >= currentOpeningBaraj || resD.total >= 5) return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Taş Değerlendirme (Weighted Scoring)
+   */
+  private scoreHand(): Map<string, number> {
     const scores = new Map<string, number>();
+    const okey = { number: this.okeyNumber, color: this.okeyColor };
+    
+    // Temel puanlar
     this.hand.forEach(t => scores.set(t.id, 0));
 
-    // Seri kontrol
-    const colors: TileColor[] = ['red', 'blue', 'black', 'yellow'];
-    for (const color of colors) {
-      const byColor = this.hand
-        .filter(t => !this.isOkey(t) && t.color === color)
-        .sort((a, b) => a.number - b.number);
-
-      for (let i = 0; i < byColor.length; i++) {
-        let seriesLen = 1;
-        for (let j = i + 1; j < byColor.length; j++) {
-          if (byColor[j].number === byColor[i].number + (j - i)) seriesLen++;
-          else break;
-        }
-        if (seriesLen >= 2) {
-          // Seri uzunluğuna göre bonus
-          for (let k = i; k < i + seriesLen; k++) {
-            const cur = scores.get(byColor[k].id) || 0;
-            scores.set(byColor[k].id, cur + seriesLen * 3);
-          }
-        }
-      }
-    }
-
-    // Çift / üçlü kontrol
-    const byNumber = new Map<number, TileData[]>();
-    this.hand.filter(t => !this.isOkey(t)).forEach(t => {
-      if (!byNumber.has(t.number)) byNumber.set(t.number, []);
-      byNumber.get(t.number)!.push(t);
+    // Seri Bonusu
+    const sRes = findMelds(this.hand, okey);
+    sRes.melds.flat().forEach((t: TileData) => {
+      const cur = scores.get(t.id) || 0;
+      scores.set(t.id, cur + 50); 
     });
 
-    for (const [, group] of byNumber) {
-      if (group.length >= 2) {
-        group.forEach(t => {
-          const cur = scores.get(t.id) || 0;
-          scores.set(t.id, cur + group.length * 2);
-        });
-      }
-    }
+    // Çift Bonusu
+    const dRes = findDoubles(this.hand, okey);
+    dRes.pairs.flat().forEach((t: TileData) => {
+      const cur = scores.get(t.id) || 0;
+      scores.set(t.id, cur + 30);
+    });
 
-    // Okey her zaman yüksek değer
-    this.hand.filter(t => this.isOkey(t)).forEach(t => scores.set(t.id, 999));
+    // Gelecek Vaat Edenler
+    this.hand.forEach(t => {
+        if (this.isOkey(t)) {
+            scores.set(t.id, 9999);
+            return;
+        }
+        
+        const neighbors = this.hand.filter(other => 
+            other.id !== t.id && 
+            other.color === t.color && 
+            Math.abs(other.number - t.number) <= 2
+        );
+        const cur = scores.get(t.id) || 0;
+        scores.set(t.id, cur + (neighbors.length * 5));
+    });
 
     return scores;
   }
 
-  /**
-   * Atacak en iyi taşı seç (en düşük skorlu)
-   */
   public pickDiscard(): TileData {
-    const scores = this.scoreGroups();
-    let worst: TileData = this.hand[0];
-    let worstScore = Infinity;
+    const scores = this.scoreHand();
+    let worstTile: TileData = this.hand[0];
+    let minScore = Infinity;
 
-    for (const t of this.hand) {
+    this.hand.forEach((t: TileData) => {
       const s = scores.get(t.id) || 0;
-      if (s < worstScore) {
-        worstScore = s;
-        worst = t;
+      if (s < minScore || (s === minScore && t.number < worstTile.number)) {
+        minScore = s;
+        worstTile = t;
       }
-    }
+    });
 
-    return worst;
-  }
-
-  /**
-   * Çekilen taşı elde tut mu, at mı?
-   */
-  public evaluateDrawnTile(drawn: TileData): 'keep' | 'discard' {
-    const tempHand = [...this.hand, drawn];
-    const bot = new BotAI(tempHand, { id: '', number: this.okeyNumber === 1 ? 13 : this.okeyNumber - 1, color: this.okeyColor });
-    const scores = bot.scoreGroups();
-    const drawnScore = scores.get(drawn.id) || 0;
-
-    // Eğer taş en az bir grupla ilişkiliyse tut
-    return drawnScore >= 4 ? 'keep' : 'discard';
+    return worstTile;
   }
 
   public addTile(tile: TileData) {
@@ -110,9 +116,5 @@ export class BotAI {
 
   public removeTile(id: string) {
     this.hand = this.hand.filter(t => t.id !== id);
-  }
-
-  public getHand() {
-    return this.hand;
   }
 }

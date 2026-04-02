@@ -8,9 +8,12 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 import authRoutes from './routes/auth.js';
 import paymentRoutes from './routes/payment.js';
+// @ts-ignore - Bu dosya çalışma zamanında .js olarak çözümlenecek
+import leaderboardRoutes from './routes/leaderboard.js';
 import { TileColor, TileData, GameEngine, COLOR_MULTIPLIERS, FAKE_OKEY_MULTIPLIER } from './gameEngine.js';
 import { BotAI } from './botAI.js';
 import { getOkeyInfo, isWinningHand, isValidMeld, isOkeyTile, isValidDouble, calculateRoundScores, findMelds, findDoubles } from './winChecker.js';
+import { User } from './models/User.js';
 
 const app = express();
 app.use(cors());
@@ -18,6 +21,7 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/leaderboard', leaderboardRoutes);
 
 // MongoDB Bağlantısı (Hükümdar Seviyesi Hata Teşhisli)
 const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/gapdirik-db';
@@ -185,16 +189,47 @@ function endGame(room: Room, winnerId: string) {
 
   const roundResults = calculateRoundScores(playerStates, room.indicator!, false);
   
-  // Update tournament scores
-  roundResults.forEach((res: any) => {
+  // ─── VERİTABANI MÜHÜRLEME (LEADERBOARD & CHIPS) ───
+  roundResults.forEach(async (res: any) => {
     if (!room.tournamentScores[res.playerId]) room.tournamentScores[res.playerId] = 0;
     room.tournamentScores[res.playerId] += res.score;
     
-    // Also deduct chips based on score intensity
-    const player = room.players.find(p => p.id === res.playerId);
-    if (player) {
-       // Typically in 101, chips are separate from score points, but we'll link them for impact
-       player.chips -= Math.max(0, res.score * 10); 
+    // SADECE GERÇEK OYUNCULARI GÜNCELLE
+    if (!res.playerId.startsWith('bot-')) {
+       try {
+          const user = await User.findById(res.playerId);
+          if (user && user.stats) {
+             const pointsEarned = res.score <= 0 ? 100 : 10; 
+             user.chips -= Math.max(0, res.score * 10);
+             user.stats.totalTournamentPoints = (user.stats.totalTournamentPoints || 0) + pointsEarned;
+             user.stats.gamesPlayed = (user.stats.gamesPlayed || 0) + 1;
+             
+             // --- XP & LEVEL UP SİSTEMİ ---
+             const xpGain = res.playerId === winnerId ? 250 : 50; 
+             user.xp = (user.xp || 0) + xpGain;
+             const xpGoal = (user.level || 1) * 1000;
+             if (user.xp >= xpGoal) {
+                user.level = (user.level || 1) + 1;
+                user.xp -= xpGoal;
+                io.to(room.id).emit('player_level_up', { playerId: user.id, playerName: user.username, newLevel: user.level });
+             }
+
+             if (res.playerId === winnerId) {
+                user.stats.wins = (user.stats.wins || 0) + 1;
+                user.stats.currentWinStreak = (user.stats.currentWinStreak || 0) + 1;
+                if (user.stats.currentWinStreak > (user.stats.bestWinStreak || 0)) {
+                   user.stats.bestWinStreak = user.stats.currentWinStreak;
+                }
+             } else {
+                user.stats.losses = (user.stats.losses || 0) + 1;
+                user.stats.currentWinStreak = 0;
+             }
+             user.markModified('stats'); // Mühürle: Mongoose nested objeleri bazen görmeyebilir
+             await user.save();
+          }
+       } catch (err) {
+          console.error('[DATABASE ERROR] Stats update failed:', err);
+       }
     }
   });
 
@@ -219,19 +254,49 @@ function scheduleBotTurn(room: Room) {
     if (room.gameState !== 'playing') return;
     if (room.players[room.turnIndex]?.id !== current.id) return;
 
-    if (room.drawPile.length === 0) {
-      endGame(room, ''); 
-      return;
+    // --- BOT KONUŞMA MANTIĞI (%15 ŞANS) ---
+    const botPhrases = [
+      'Burası bende beyler!', 'Hızlı oynayalım azıcık.', 'Çayımı kim tazeleyecek?', 
+      'Okeyi attım, hadi hayırlısı!', 'Şans dediğin budur.', 'Bu el biter mi be?', 
+      'Maşallah, herkes tıkır tıkır.', 'Hadi bakalım, kim açacak?', 'Zor bir el oluyor...',
+      'Biri okey mi dedi?', 'Siz kaşındınız!', 'Bitince haber verin.', 'Bu el çok yanarız.'
+    ];
+    if (Math.random() > 0.85) {
+      io.to(room.id).emit('chat_message', { 
+        senderName: current.name, 
+        message: botPhrases[Math.floor(Math.random() * botPhrases.length)], 
+        timestamp: Date.now() 
+      });
     }
-    const drawn = room.drawPile.shift()!;
-    current.hand.push(drawn);
 
     const ai = current.botAI!;
-    ai.addTile(drawn);
-
     const okey = getOkeyInfo(room.indicator!);
 
-    // BOT EL AÇMA MANTIĞI (Baraj Seri: 51, Çift: 52 - GAPDİRİK KURALLARI)
+    // --- YERDEKİ TAŞI KONTROL ET (STRATEJİK ALIŞ) ---
+    const prevIdx = (room.turnIndex - 1 + room.players.length) % room.players.length;
+    const prevPlayerId = room.players[prevIdx]?.id;
+    const discardPile = prevPlayerId ? (room.allDiscards[prevPlayerId] || []) : [];
+    const lastDiscard = discardPile.length > 0 ? discardPile[discardPile.length - 1] : null;
+
+    let tileDrawn: TileData;
+    let pickedFromDiscard = false;
+
+    if (lastDiscard && ai.shouldPickDiscard(lastDiscard, room.highestSeriesValue, current.hasOpened)) {
+        tileDrawn = discardPile.pop()!;
+        pickedFromDiscard = true;
+        current.hand.push(tileDrawn);
+        ai.addTile(tileDrawn);
+    } else {
+        if (room.drawPile.length === 0) {
+          endGame(room, ''); 
+          return;
+        }
+        tileDrawn = room.drawPile.shift()!;
+        current.hand.push(tileDrawn);
+        ai.addTile(tileDrawn);
+    }
+
+    // BOT EL AÇMA VE DİĞER MANTIKLAR
     if (!current.hasOpened) {
        const series = findMelds(current.hand, okey);
        const doubles = findDoubles(current.hand, okey);
@@ -240,29 +305,17 @@ function scheduleBotTurn(room: Room) {
           current.hasOpened = true;
           current.openedType = 'series';
           room.openedMelds[current.id] = series.melds;
-          room.highestSeriesValue = series.total + 1;
-          const meldIds = new Set(series.melds.flat().map((t: TileData) => t.id));
-          current.hand = current.hand.filter((t: TileData) => !meldIds.has(t.id));
-          series.melds.flat().forEach((t: TileData) => ai.removeTile(t.id));
-          console.log(`[BOT OPEN] ${current.name} opened Series with ${series.total}`);
-       } else if (doubles.total >= room.highestDoublesValue) {
+          room.highestSeriesValue = Math.max(room.highestSeriesValue, series.total + 1);
+          const meldIds = new Set(series.melds.flat().map((t: any) => t.id));
+          current.hand = current.hand.filter((t: any) => !meldIds.has(t.id));
+          series.melds.flat().forEach((t: any) => ai.removeTile(t.id));
+       } else if (doubles.total >= 5) {
           current.hasOpened = true;
           current.openedType = 'doubles';
           room.openedMelds[current.id] = doubles.pairs;
-          room.highestDoublesValue = doubles.total + 1;
-          const pairIds = new Set(doubles.pairs.flat().map((t: TileData) => t.id));
-          current.hand = current.hand.filter((t: TileData) => !pairIds.has(t.id));
-          doubles.pairs.flat().forEach((t: TileData) => ai.removeTile(t.id));
-          console.log(`[BOT OPEN] ${current.name} opened Doubles with ${doubles.total}`);
-       }
-    } else {
-       // AÇIKSA DİĞERLERİNE İŞLE VE EK PER AÇ
-       const series = findMelds(current.hand, okey);
-       if (series.total > 0) {
-          room.openedMelds[current.id] = [...(room.openedMelds[current.id] || []), ...series.melds];
-          const meldIds = new Set(series.melds.flat().map((t: TileData) => t.id));
-          current.hand = current.hand.filter((t: TileData) => !meldIds.has(t.id));
-          series.melds.flat().forEach((t: TileData) => ai.removeTile(t.id));
+          const pairIds = new Set(doubles.pairs.flat().map((t: any) => t.id));
+          current.hand = current.hand.filter((t: any) => !pairIds.has(t.id));
+          doubles.pairs.flat().forEach((t: any) => ai.removeTile(t.id));
        }
     }
 
@@ -273,15 +326,16 @@ function scheduleBotTurn(room: Room) {
 
     const discard = ai.pickDiscard();
     ai.removeTile(discard.id);
-    current.hand = current.hand.filter(t => t.id !== discard.id);
+    current.hand = current.hand.filter((t: any) => t.id !== discard.id);
     if (!room.allDiscards[current.id]) room.allDiscards[current.id] = [];
     room.allDiscards[current.id].push(discard);
 
     io.to(room.id).emit('bot_action', {
       botId: current.id,
       botName: current.name,
-      drawnTile: null,
+      drawnTile: pickedFromDiscard ? null : tileDrawn,
       discardedTile: discard,
+      pickedFromDiscard
     });
 
     advanceTurn(room);
@@ -394,11 +448,6 @@ io.on('connection', (socket: Socket) => {
 
     // Initial Chip Count: 50,000
     const START_CHIPS = 50000;
-    
-    if (START_CHIPS < room.roundBet) {
-       socket.emit('join_error', 'Yetersiz çip! Bu odaya girmek için daha fazlasına ihtiyacın var.');
-       return;
-    }
 
     const newPlayer: Player = {
       id: socket.id,
@@ -410,26 +459,56 @@ io.on('connection', (socket: Socket) => {
       hasOpened: false,
       openedType: null,
     };
-    room.players.push(newPlayer);
-    socket.join(roomId);
 
-    const updateData = {
-      id: room.id,
-      name: room.name,
-      players: room.players.map(p => ({
-        id: p.id,
-        name: p.name,
-        chips: p.chips,
-        isBot: p.isBot,
-        tileCount: p.hand.length,
-        hasOpened: p.hasOpened,
-        openedType: p.openedType
-      })),
-      gameState: room.gameState,
-      roundBet: room.roundBet
-    };
-    
-    io.to(roomId).emit('room_update', updateData);
+    // --- YENİ: GÜNLÜK BONUS MANTIĞI & VERİTABANI SENKRONİZASYONU ---
+    (async () => {
+       try {
+          const user = await User.findOne({ username: playerName });
+          if (user) {
+             const now = new Date();
+             const lastClaim = user.lastLogin || new Date(0);
+             const diffHours = (now.getTime() - lastClaim.getTime()) / (1000 * 3600);
+             
+             if (diffHours >= 24) {
+                user.chips += 10000;
+                user.lastLogin = now;
+                await user.save();
+                console.log(`🎁 [BONUS] ${playerName} daily bonus 10.000 chips awarded!`);
+                socket.emit('daily_bonus_success', { amount: 10000, newTotal: user.chips });
+             } else {
+                user.lastLogin = now; 
+                await user.save();
+             }
+             
+             // Güncel bakiyeyi buraya yansıt
+             newPlayer.chips = user.chips || START_CHIPS;
+          }
+       } catch (err) {
+          console.error('[DATABASE] Bonus/User sync error:', err);
+       }
+
+       if (!room) return;
+       room.players.push(newPlayer);
+       socket.join(roomId);
+
+       const updateData = {
+         id: room.id,
+         name: room.name,
+         players: room.players.map(p => ({
+           id: p.id,
+           name: p.name,
+           chips: p.chips,
+           isBot: p.isBot,
+           tileCount: p.hand.length,
+           hasOpened: p.hasOpened,
+           openedType: p.openedType
+         })),
+         gameState: room.gameState,
+         roundBet: room.roundBet
+       };
+       
+       io.to(roomId).emit('room_update', updateData);
+    })();
   });
 
   socket.on('quick_join', ({ playerName, preferredBet }: { playerName: string; preferredBet?: number }) => {
@@ -963,6 +1042,39 @@ io.on('connection', (socket: Socket) => {
     });
     console.log(`[-] Ayrıldı: ${socket.id}`);
   });
+});
+
+/* ─── GÜNLÜK RIZIK (Daily Bonus) ─── */
+app.post('/api/user/daily-bonus', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: 'Karakter bulunamadı!' });
+
+    const now = new Date();
+    if (!user.stats) user.stats = { wins: 0, losses: 0, gamesPlayed: 0, totalTournamentPoints: 0, totalChipsWon: 0, bestWinStreak: 0, currentWinStreak: 0 };
+    
+    const lastBonus = user.stats.lastGameDate || new Date(0);
+    const diffHours = (now.getTime() - lastBonus.getTime()) / 36e5;
+
+    if (diffHours < 24) {
+      const remaining = Math.ceil(24 - diffHours);
+      return res.json({ success: false, message: `Hasat vakti gelmedi! ${remaining} saat sonra gel.`, remaining });
+    }
+
+    user.chips += 10000;
+    user.stats.lastGameDate = now;
+    await user.save();
+
+    res.json({ 
+       success: true, 
+       message: 'HÜKÜMDAR RIZKI ALINDI! 10.000 ÇİP HESABINIZDA!', 
+       chips: user.chips,
+       nextBonus: 24
+    });
+  } catch (e: any) {
+    res.status(500).json({ success: false, message: e.message });
+  }
 });
 
 // [MÜHÜRR] Sunucuyu Sadece Veritabanı Hazırsa Başlat!

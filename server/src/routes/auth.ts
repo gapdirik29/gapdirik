@@ -208,22 +208,47 @@ router.post('/reset-password', async (req, res) => {
   }
 });
 
-router.get('/me', async (req, res) => {
+router.post('/daily-bonus', async (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Yetkisiz erişim' });
-    }
-
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ error: 'Yetkisiz' });
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
 
-    const user = await User.findById(decoded.id).select('-password');
-    if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
+    const user = await User.findById(decoded.id);
+    if (!user) return res.status(404).json({ error: 'Kullanıcı yok' });
 
+    const now = new Date();
+    const lastBonus = user.stats?.lastDailyBonus ? new Date(user.stats.lastDailyBonus) : new Date(0);
+    const diffHours = (now.getTime() - lastBonus.getTime()) / (1000 * 60 * 60);
+
+    if (diffHours < 24) {
+      return res.status(400).json({ error: 'Bugünkü ödülünüzü zaten aldınız.' });
+    }
+
+    const bonusAmount = 50000;
+    user.chips += bonusAmount;
+    if (!user.stats) user.stats = { totalGames: 0, wins: 0, losses: 0, totalWinnings: 0 };
+    user.stats.lastDailyBonus = now.getTime();
+    await user.save();
+
+    res.json({ success: true, chips: user.chips, bonus: bonusAmount });
+  } catch (err) {
+    res.status(500).json({ error: 'Ödül alınırken hata oluştu' });
+  }
+});
+
+router.get('/me', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ error: 'Yetkisiz' });
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) return res.status(404).json({ error: 'Kullanıcı yok' });
     res.json({ user });
   } catch (err) {
-    res.status(401).json({ error: 'Geçersiz token' });
+    res.status(401).json({ error: 'Geçersiz' });
   }
 });
 

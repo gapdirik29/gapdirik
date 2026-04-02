@@ -197,8 +197,8 @@ body::before {
 
   .social-hub-float {
     position: fixed;
-    left: var(--safe-left);
-    top: 50%;
+    right: var(--safe-right);
+    top: 55%;
     transform: translateY(-50%);
     flex-direction: column !important;
     gap: 8px !important;

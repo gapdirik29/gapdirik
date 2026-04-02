@@ -12,12 +12,10 @@ const getStripe = () => {
 };
 
 const ALL_PACKS: { [key: string]: { name: string, price: number, chips: number } } = {
-  'neon_tiles': { name: 'NEON TAŞ SETİ', price: 29.99, chips: 0 },
-  'gold_tiles': { name: 'ALTIN TAŞ SETİ', price: 49.99, chips: 0 },
-  'starter': { name: 'Başlangıç Paketi (100K)', price: 49.99, chips: 100000 },
-  'standard': { name: 'Standart Paket (250K)', price: 99.99, chips: 250000 },
-  'master': { name: 'Usta Paketi (600K)', price: 199.99, chips: 600000 },
-  'vip': { name: 'VIP Kral Paket (2M)', price: 499.99, chips: 2000000 },
+  'starter': { name: 'Küçük Kese (50K)', price: 29.99, chips: 50000 },
+  'standard': { name: 'Zengin Çanta (150K)', price: 79.99, chips: 150000 },
+  'master': { name: 'Elmas Sandık (500K)', price: 199.99, chips: 500000 },
+  'vip': { name: 'Kral Hazinesi (2.5M)', price: 749.99, chips: 2500000 },
 };
 
 // 1. SEPET ÖDEMESİ BAŞLATMA
