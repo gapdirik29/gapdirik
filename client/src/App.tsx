@@ -295,8 +295,8 @@ export default function App() {
 
   return (
     <div className={`theme-${theme} game-layout`}>
-      {/* ÜST PANEL (STATS & NAV) */}
-      <header className="header-stats">
+      {/* ÜST PANEL (DRAGGABLE) */}
+      <motion.header drag dragMomentum={false} className="header-stats" style={{ zIndex: 2000, cursor: 'move' }}>
         <ScoreBoard 
           indicator={gameState.indicator} 
           highestSeriesValue={gameState.highestSeriesValue} 
@@ -311,15 +311,15 @@ export default function App() {
         >
           KALK
         </button>
-      </header>
+      </motion.header>
 
-      {/* SOL OYUNCU */}
-      <aside style={{ gridArea: 'left-player', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {/* SOL OYUNCU (DRAGGABLE) */}
+      <motion.aside drag dragMomentum={false} style={{ gridArea: 'left-player', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1500, cursor: 'move' }}>
          {getSeat('left')}
-      </aside>
+      </motion.aside>
 
-      {/* OYUN MERKEZİ (ÜST OYUNCU + DESTE) */}
-      <main className="center-board-area">
+      {/* OYUN MERKEZİ (DRAGGABLE) */}
+      <motion.main drag dragMomentum={false} className="center-board-area" style={{ zIndex: 1400, cursor: 'move' }}>
          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', width: '100%' }}>
             <div style={{ height: '8rem', display: 'flex', alignItems: 'center' }}>
                {getSeat('top')}
@@ -337,10 +337,10 @@ export default function App() {
               tileSkin={tileSkin} 
             />
          </div>
-      </main>
+      </motion.main>
 
-      {/* SAĞ OYUNCU + SOSYAL HUB */}
-      <aside style={{ gridArea: 'right-player', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
+      {/* SAĞ OYUNCU + SOSYAL HUB (DRAGGABLE) */}
+      <motion.aside drag dragMomentum={false} style={{ gridArea: 'right-player', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', zIndex: 1500, cursor: 'move' }}>
          {getSeat('right')}
          
          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginLeft: 'auto', paddingRight: '0.5rem' }}>
@@ -353,15 +353,14 @@ export default function App() {
               </motion.button>
             ))}
          </div>
-      </aside>
+      </motion.aside>
 
-      {/* ISTAKA ALANI (ALT OYUNCU + ISTAKA) */}
+      {/* ISTAKA ALANI (DRAGGABLE - Sadece Üst Kısmı) */}
       <footer className="rack-footer">
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: '0.5rem' }}>
-           {/* Portratid modunda bottom player'ı üstte gösterelim */}
-           <div style={{ transform: 'scale(0.8)', marginBottom: '-1rem' }}>
+           <motion.div drag dragMomentum={false} style={{ transform: 'scale(0.8)', marginBottom: '-1rem', zIndex: 1600, cursor: 'move' }}>
               {getSeat('bottom')}
-           </div>
+           </motion.div>
            
            <Rack 
              hand={hand} 
