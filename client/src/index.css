@@ -176,48 +176,87 @@ body::before {
   to { transform: translate(-50%, 0) scale(1); opacity: 1; }
 }
 
-/* ─── HÜKÜMDAR LANDSCAPE (YAN MOD) DEVRİMİ ─── */
+/* ─── HÜKÜMDAR DİNAMİK ÖLÇEKLENDİRME (RESPONSIVE DEVRİM) ─── */
+:root {
+  --rack-height: 25vh;
+  --center-scale: 0.9;
+}
+
 @media screen and (orientation: landscape) {
+  :root {
+    --rack-height: 35vh;
+    --center-scale: 0.85;
+  }
+  
   .game-layout {
     display: grid;
-    grid-template-columns: 120px 1fr 120px;
-    grid-template-rows: 1fr auto;
+    grid-template-columns: 140px 1fr 140px;
+    grid-template-rows: 1fr var(--rack-height);
     height: 100vh;
     padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
   }
 
   .rack-area {
     grid-column: 1 / 4;
-    height: 160px !important;
+    height: var(--rack-height) !important;
+    transform: scale(calc(var(--rack-height) / 180));
+    transform-origin: bottom center;
   }
 
   .center-deck-area {
-    transform: scale(0.9);
+    transform: scale(var(--center-scale));
   }
 
   .social-hub-float {
     position: fixed;
-    right: var(--safe-right);
-    top: 55%;
-    transform: translateY(-50%);
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%) scale(0.8);
+    display: flex;
     flex-direction: column !important;
-    gap: 8px !important;
+    gap: 6px !important;
   }
 }
 
 @media screen and (orientation: portrait) {
-  .game-layout {
-    display: none !important;
+  :root {
+    --rack-height: 20vh;
+    --center-scale: 0.65;
   }
-  .portrait-only-overlay {
-    display: flex !important;
-    position: fixed; inset: 0; background: var(--bg-main); z-index: 1000000;
-    flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px;
-    background: radial-gradient(circle at center, #15352a 0%, #081a14 100%);
+
+  .game-layout {
+    display: grid !important;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr var(--rack-height);
+    height: 100vh;
+  }
+
+  .rack-area {
+    height: var(--rack-height) !important;
+    transform: scale(0.6);
+    transform-origin: bottom center;
+  }
+
+  .center-deck-area {
+    transform: scale(var(--center-scale)) translateY(-40px);
+  }
+  
+  .social-hub-float {
+    position: fixed;
+    bottom: calc(var(--rack-height) + 10px);
+    left: 0; right: 0;
+    flex-direction: row !important;
+    justify-content: center;
+    gap: 5px !important;
+    transform: scale(0.7);
   }
 }
 
-.portrait-only-overlay { display: none; }
+/* Sayfa Kenarlarını Koruma */
+.safe-padding {
+  padding-left: var(--safe-left);
+  padding-right: var(--safe-right);
+}
 
 /* Sayfa Kenarlarını Koruma (Notch & Bar) */
 .safe-padding {
