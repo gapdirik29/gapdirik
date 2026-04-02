@@ -220,6 +220,29 @@ export default function App() {
   const hS = useMemo(() => findReadyMelds(hand, getOkeyInfo(gameState.indicator)), [hand, gameState.indicator]);
   const dblS = useMemo(() => findDoubles(hand.filter(Boolean) as TileData[], getOkeyInfo(gameState.indicator)), [hand, gameState.indicator]);
 
+  // OYUNCU KOLTUĞU SIRALAMA YARDIMCISI (En Tepeye Taşındı - Fix #310)
+  const getSeat = useCallback((posStr: 'bottom' | 'right' | 'top' | 'left') => {
+    const myIdx = gameState.players.findIndex(p => p.id === socket?.id);
+    const targetIdx = (myIdx + (posStr === 'bottom' ? 0 : posStr === 'right' ? 1 : posStr === 'top' ? 2 : 3)) % gameState.players.length;
+    const p = gameState.players[targetIdx];
+    if (!p) return null;
+
+    const seatLastMsg = chatMessages.find(m => m.senderName === p.name && (Date.now() - m.timestamp < 5000))?.message;
+    
+    return (
+      <PlayerSeat 
+        key={p.id} 
+        player={p} 
+        position={posStr} 
+        isCurrentTurn={gameState.currentTurn === p.id} 
+        playerDiscards={allDiscards[p.id] || []} 
+        activeGifts={activeGifts.filter(g => g.receiverId === p.id)} 
+        onSendGift={(r, g) => socket?.emit('send_gift', { roomId, receiverId: r, giftType: g })} 
+        lastMessage={seatLastMsg}
+      />
+    );
+  }, [gameState.players, socket?.id, chatMessages, allDiscards, activeGifts, roomId, socket]);
+
   if (screen === 'login') return (
     <>
       <Login onLogin={onLogin} />
@@ -269,32 +292,6 @@ export default function App() {
       </div>
     </div>
   );
-
-  // OYUNCU KOLTUĞU SIRALAMA YARDIMCISI
-  const getSeat = useCallback((posStr: 'bottom' | 'right' | 'top' | 'left') => {
-    const i = gameState.players.findIndex(p => (['bottom','right','top','left'] as const)[(gameState.players.findIndex(pl => pl.id === socket?.id) + (posStr === 'bottom' ? 0 : posStr === 'right' ? 1 : posStr === 'top' ? 2 : 3)) % 4] === posStr); // Bu mantık karmaşık, basitleştirelim:
-    
-    // Basit mantık: i'ye göre koltuk bul
-    const myIdx = gameState.players.findIndex(p => p.id === socket?.id);
-    const targetIdx = (myIdx + (posStr === 'bottom' ? 0 : posStr === 'right' ? 1 : posStr === 'top' ? 2 : 3)) % gameState.players.length;
-    const p = gameState.players[targetIdx];
-    if (!p) return null;
-
-    const seatLastMsg = chatMessages.find(m => m.senderName === p.name && (Date.now() - m.timestamp < 5000))?.message;
-    
-    return (
-      <PlayerSeat 
-        key={p.id} 
-        player={p} 
-        position={posStr} 
-        isCurrentTurn={gameState.currentTurn === p.id} 
-        playerDiscards={allDiscards[p.id] || []} 
-        activeGifts={activeGifts.filter(g => g.receiverId === p.id)} 
-        onSendGift={(r, g) => socket?.emit('send_gift', { roomId, receiverId: r, giftType: g })} 
-        lastMessage={seatLastMsg}
-      />
-    );
-  }, [gameState.players, socket?.id, chatMessages, allDiscards, activeGifts, roomId, socket]);
 
   return (
     <div className={`theme-${theme} game-layout`}>
