@@ -270,10 +270,36 @@ export default function App() {
     </div>
   );
 
+  // OYUNCU KOLTUĞU SIRALAMA YARDIMCISI
+  const getSeat = useCallback((posStr: 'bottom' | 'right' | 'top' | 'left') => {
+    const i = gameState.players.findIndex(p => (['bottom','right','top','left'] as const)[(gameState.players.findIndex(pl => pl.id === socket?.id) + (posStr === 'bottom' ? 0 : posStr === 'right' ? 1 : posStr === 'top' ? 2 : 3)) % 4] === posStr); // Bu mantık karmaşık, basitleştirelim:
+    
+    // Basit mantık: i'ye göre koltuk bul
+    const myIdx = gameState.players.findIndex(p => p.id === socket?.id);
+    const targetIdx = (myIdx + (posStr === 'bottom' ? 0 : posStr === 'right' ? 1 : posStr === 'top' ? 2 : 3)) % gameState.players.length;
+    const p = gameState.players[targetIdx];
+    if (!p) return null;
+
+    const seatLastMsg = chatMessages.find(m => m.senderName === p.name && (Date.now() - m.timestamp < 5000))?.message;
+    
+    return (
+      <PlayerSeat 
+        key={p.id} 
+        player={p} 
+        position={posStr} 
+        isCurrentTurn={gameState.currentTurn === p.id} 
+        playerDiscards={allDiscards[p.id] || []} 
+        activeGifts={activeGifts.filter(g => g.receiverId === p.id)} 
+        onSendGift={(r, g) => socket?.emit('send_gift', { roomId, receiverId: r, giftType: g })} 
+        lastMessage={seatLastMsg}
+      />
+    );
+  }, [gameState.players, socket?.id, chatMessages, allDiscards, activeGifts, roomId, socket]);
+
   return (
     <div className={`theme-${theme} game-layout`}>
       {/* ÜST PANEL (STATS & NAV) */}
-      <header className="header-stats" style={{ zIndex: 1000 }}>
+      <header className="header-stats">
         <ScoreBoard 
           indicator={gameState.indicator} 
           highestSeriesValue={gameState.highestSeriesValue} 
@@ -283,105 +309,104 @@ export default function App() {
         />
         <button 
           onClick={() => { setScreen('lobby'); soundManager.play('click'); }}
-          className="btn-premium btn-compact" 
+          className="btn-premium" 
           style={{ background: 'rgba(255,0,0,0.15)', border: '1px solid rgba(255,0,0,0.3)', color: '#ff4d4d' }}
         >
           KALK
         </button>
       </header>
 
-      {/* OYUN MERKEZİ */}
-      <main className="center-board">
-        {/* Oyuncu Koltukları Katmanı */}
-        <div className="players-container">
-           {gameState.players.map((p, i) => {
-             const seatLastMsg = chatMessages.find(m => m.senderName === p.name && (Date.now() - m.timestamp < 5000))?.message;
-             return (
-               <PlayerSeat 
-                 key={p.id} 
-                 player={p} 
-                 position={(['bottom','right','top','left'] as const)[(i - gameState.players.findIndex(pl => pl.id === socket?.id) + 4) % 4]} 
-                 isCurrentTurn={gameState.currentTurn === p.id} 
-                 playerDiscards={allDiscards[p.id] || []} 
-                 activeGifts={activeGifts.filter(g => g.receiverId === p.id)} 
-                 onSendGift={(r, g) => socket?.emit('send_gift', { roomId, receiverId: r, giftType: g })} 
-                 lastMessage={seatLastMsg}
-               />
-             );
-           })}
-        </div>
-
-        {/* Masa Ortası (Deste) */}
-        <div className="center-deck-area">
-          <TableCenter 
-            indicator={gameState.indicator} 
-            drawPileCount={gameState.drawPileCount} 
-            discardPile={gameState.discardPile} 
-            isMyTurn={gameState.currentTurn === socket?.id} 
-            hasDrawn={hasDrawn} 
-            canTakeDiscard={gameState.currentTurn === socket?.id && !hasDrawn} 
-            onTakeDiscard={() => socket?.emit('take_discard', { roomId })} 
-            onDraw={() => socket?.emit('draw_tile', { roomId })} 
-            onDiscard={()=>{}} 
-            tileSkin={tileSkin} 
-          />
-        </div>
-      </main>
-
-      {/* SOHBET HUB */}
-      <aside className="social-hub-float">
-        {['Helal!', 'Hadi!', 'Okey Boşa!', 'Nasip...'].map(msg => (
-          <motion.button key={msg} whileTap={{ scale: 0.9 }} 
-            onClick={() => { socket?.emit('send_message', { roomId, message: msg }); soundManager.play('click'); }}
-            className="glass-panel" 
-            style={{ padding: '0.6rem 1rem', fontSize: '0.7rem', color: '#fff', fontWeight: 900, whiteSpace: 'nowrap' }}>
-            {msg}
-          </motion.button>
-        ))}
+      {/* SOL OYUNCU */}
+      <aside style={{ gridArea: 'left-player', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+         {getSeat('left')}
       </aside>
 
-      {/* ISTAKA ALANI */}
-      <footer className="rack-area">
-        <Rack 
-          hand={hand} 
-          selectedId={selectedId}
-          onSelectTile={setSelectedId}
-          onDoubleClickTile={(tId) => { 
-              if (gameState.currentTurn === socket?.id && hasDrawn) { 
-                socket?.emit('discard_tile', { roomId, tileId: tId }); 
-                setHand(prev => prev.map(t => t?.id === tId ? null : t)); 
-                setHasDrawn(false); 
-              } 
-          }}
-          onMoveToSlot={(tId, targetIdx) => setHand(prev => { 
-              const s = prev.findIndex(t => t?.id === tId); 
-              if (s===-1) return prev; 
-              const n = [...prev]; 
-              const m = n[s]! ; 
-              n[s] = n[targetIdx]; 
-              n[targetIdx] = m; 
-              return n; 
-          })}
-          seriesPoints={hS.total} 
-          doublesPoints={dblS.total} 
-          handCount={hand.filter(Boolean).length} 
-          appendableTiles={[]} 
-          minMeldToOpen={gameState.highestSeriesValue} 
-          colorMult={getColorMultiplier(gameState.indicator)} 
-          canOpenSeries={gameState.currentTurn === socket?.id && hasDrawn && hS.total >= gameState.highestSeriesValue} 
-          canOpenDoubles={gameState.currentTurn === socket?.id && hasDrawn && (dblS.pairs.length >= 5 || dblS.total >= gameState.highestDoublesValue)} 
-          canPutBack={tookDiscard} 
-          onPutBack={()=>{}} 
-          onOpenSeries={() => socket?.emit('open_series', { roomId, melds: hS.melds })} 
-          onOpenDoubles={() => socket?.emit('open_doubles', { roomId, pairs: dblS.pairs })} 
-          onAppends={()=>{}} 
-          onSortDoubles={()=>{}} 
-          onSortSeries={()=>{}} 
-          tileSkin={tileSkin} 
-          highestSeriesValue={gameState.highestSeriesValue} 
-          highestDoublesValue={gameState.highestDoublesValue} 
-          tournamentScores={gameState.tournamentScores} 
-        />
+      {/* OYUN MERKEZİ (ÜST OYUNCU + DESTE) */}
+      <main className="center-board-area">
+         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', width: '100%' }}>
+            <div style={{ height: '8rem', display: 'flex', alignItems: 'center' }}>
+               {getSeat('top')}
+            </div>
+            <TableCenter 
+              indicator={gameState.indicator} 
+              drawPileCount={gameState.drawPileCount} 
+              discardPile={gameState.discardPile} 
+              isMyTurn={gameState.currentTurn === socket?.id} 
+              hasDrawn={hasDrawn} 
+              canTakeDiscard={gameState.currentTurn === socket?.id && !hasDrawn} 
+              onTakeDiscard={() => socket?.emit('take_discard', { roomId })} 
+              onDraw={() => socket?.emit('draw_tile', { roomId })} 
+              onDiscard={()=>{}} 
+              tileSkin={tileSkin} 
+            />
+         </div>
+      </main>
+
+      {/* SAĞ OYUNCU + SOSYAL HUB */}
+      <aside style={{ gridArea: 'right-player', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
+         {getSeat('right')}
+         
+         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', justifyContent: 'center', padding: '0.5rem' }}>
+            {['Helal!', 'Hadi!', 'Okey Boşa!', 'Nasip...'].map(msg => (
+              <motion.button key={msg} whileTap={{ scale: 0.9 }} 
+                onClick={() => { socket?.emit('send_message', { roomId, message: msg }); soundManager.play('click'); }}
+                className="glass-panel" 
+                style={{ padding: '0.4rem 0.6rem', fontSize: '0.6rem', color: '#fff', fontWeight: 900, whiteSpace: 'nowrap', borderRadius: '0.8rem' }}>
+                {msg}
+              </motion.button>
+            ))}
+         </div>
+      </aside>
+
+      {/* ISTAKA ALANI (ALT OYUNCU + ISTAKA) */}
+      <footer className="rack-footer">
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: '0.5rem' }}>
+           {/* Portratid modunda bottom player'ı üstte gösterelim */}
+           <div style={{ transform: 'scale(0.8)', marginBottom: '-1rem' }}>
+              {getSeat('bottom')}
+           </div>
+           
+           <Rack 
+             hand={hand} 
+             selectedId={selectedId}
+             onSelectTile={setSelectedId}
+             onDoubleClickTile={(tId) => { 
+                 if (gameState.currentTurn === socket?.id && hasDrawn) { 
+                   socket?.emit('discard_tile', { roomId, tileId: tId }); 
+                   setHand(prev => prev.map(t => t?.id === tId ? null : t)); 
+                   setHasDrawn(false); 
+                 } 
+             }}
+             onMoveToSlot={(tId, targetIdx) => setHand(prev => { 
+                 const s = prev.findIndex(t => t?.id === tId); 
+                 if (s===-1) return prev; 
+                 const n = [...prev]; 
+                 const m = n[s]! ; 
+                 n[s] = n[targetIdx]; 
+                 n[targetIdx] = m; 
+                 return n; 
+             })}
+             seriesPoints={hS.total} 
+             doublesPoints={dblS.total} 
+             handCount={hand.filter(Boolean).length} 
+             appendableTiles={[]} 
+             minMeldToOpen={gameState.highestSeriesValue} 
+             colorMult={getColorMultiplier(gameState.indicator)} 
+             canOpenSeries={gameState.currentTurn === socket?.id && hasDrawn && hS.total >= gameState.highestSeriesValue} 
+             canOpenDoubles={gameState.currentTurn === socket?.id && hasDrawn && (dblS.pairs.length >= 5 || dblS.total >= gameState.highestDoublesValue)} 
+             canPutBack={tookDiscard} 
+             onPutBack={()=>{}} 
+             onOpenSeries={() => socket?.emit('open_series', { roomId, melds: hS.melds })} 
+             onOpenDoubles={() => socket?.emit('open_doubles', { roomId, pairs: dblS.pairs })} 
+             onAppends={()=>{}} 
+             onSortDoubles={()=>{}} 
+             onSortSeries={()=>{}} 
+             tileSkin={tileSkin} 
+             highestSeriesValue={gameState.highestSeriesValue} 
+             highestDoublesValue={gameState.highestDoublesValue} 
+             tournamentScores={gameState.tournamentScores} 
+           />
+        </div>
       </footer>
 
       {/* VERSİYON BİLGİSİ */}

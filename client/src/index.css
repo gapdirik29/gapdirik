@@ -1,107 +1,91 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap');
 
-/* ─── HÜKÜMDAR KOMPAKT TASARIM SİSTEMİ ─── */
 :root {
   --bg-main: #0a0e12;
   --accent-gold: #ffd700;
-  --accent-gold-glow: rgba(255, 215, 0, 0.3);
   --glass-bg: rgba(255, 255, 255, 0.05);
   --glass-border: rgba(255, 255, 255, 0.1);
-  
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-left: env(safe-area-inset-left, 0px);
-  --safe-right: env(safe-area-inset-right, 0px);
 }
 
-/* KOMPAKT ÖLÇEKLENDİRME - DÜNYANIN KALBİ */
+/* KESİN ÖLÇEKLENDİRME */
 html {
-  font-size: clamp(8px, 1.2vmax, 16px); /* Ekran neyse, UI odur! */
+  font-size: clamp(8px, 1.25vmax, 14px);
 }
 
 body, #root {
   margin: 0; padding: 0;
   width: 100vw; height: 100vh;
+  background: var(--bg-main);
   overflow: hidden;
-  background-color: var(--bg-main);
   font-family: 'Outfit', sans-serif;
   color: white;
-  touch-action: none;
-  -webkit-tap-highlight-color: transparent;
 }
 
-/* OYUN LAYOUT (GRID) - KARGAŞAYI ÖNLEYEN KALKAN */
+/* OYUN DÜZENİ (TRUE GRID) */
 .game-layout {
   display: grid;
   width: 100vw; height: 100vh;
-  background: radial-gradient(circle at 50% 20%, #152538 0%, #0a0e12 100%);
-  position: relative;
+  background: radial-gradient(circle at 50% 20%, #152538 0%, #0a0e12 100%) !important;
 }
 
-/* YAN MOD (LANDSCAPE) MİMARİSİ */
+/* LANDSCAPE (YATAY) - TAM ERGONOMİ */
 @media screen and (orientation: landscape) {
   .game-layout {
-    grid-template-columns: 10rem 1fr 10rem;
-    grid-template-rows: auto 1fr 9rem;
+    grid-template-areas: 
+      "header header header"
+      "left-player center right-player"
+      "footer footer footer";
+    grid-template-columns: 12rem 1fr 12rem;
+    grid-template-rows: 5rem 1fr auto;
     padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left);
   }
-
-  .rack-area {
-    grid-column: 1 / 4;
-    grid-row: 3;
-    height: 100%;
-    transform: scale(0.95);
-    transform-origin: bottom center;
-  }
-
-  .center-deck-area {
-    grid-column: 2;
-    grid-row: 2;
-    display: flex; align-items: center; justify-content: center;
-    transform: scale(0.85);
-  }
-
-  .social-hub-float {
-    grid-column: 3;
-    grid-row: 2;
-    display: flex; flex-direction: column; gap: 0.5rem;
-    justify-content: center; align-items: flex-end;
-    padding-right: 1.5rem;
-    transform: scale(0.8);
-  }
 }
 
-/* DİK MOD (PORTRAIT) MİMARİSİ - YENİDEN DOĞUŞ */
+/* PORTRAIT (DİKEY) - COMPACT STACKING */
 @media screen and (orientation: portrait) {
   .game-layout {
+    grid-template-areas: 
+      "header"
+      "center"
+      "players"
+      "footer";
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr auto 12rem;
+    grid-template-rows: auto 1fr auto auto;
     padding: var(--safe-top) 0 var(--safe-bottom) 0;
   }
-
-  .rack-area {
-    grid-row: 4;
-    transform: scale(0.55);
-    transform-origin: bottom center;
-  }
-
-  .center-deck-area {
-    grid-row: 2;
-    transform: scale(0.65) translateY(-2rem);
-  }
-
-  .social-hub-float {
-    grid-row: 3;
-    display: flex; flex-direction: row; gap: 0.4rem;
-    justify-content: center; padding: 1rem;
-    transform: scale(0.7);
+  
+  .side-players-stack {
+     grid-area: players;
+     display: flex; justify-content: space-around; padding: 1rem;
+     transform: scale(0.85);
   }
 }
 
-/* PREMİUM BİLEŞENLER */
+.header-stats {
+  grid-area: header;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 1.5rem;
+}
+
+.center-board-area {
+  grid-area: center;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.rack-footer {
+  grid-area: footer;
+  display: flex; justify-content: center; align-items: flex-end;
+  min-height: 10rem;
+}
+
+/* ELEMENT GÖRÜNÜMLERİ */
 .glass-panel {
   background: var(--glass-bg);
-  backdrop-filter: blur(20px);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
   border: 1px solid var(--glass-border);
   border-radius: 1.5rem;
 }
@@ -110,12 +94,11 @@ body, #root {
   background: linear-gradient(135deg, #ffd700 0%, #ff9500 100%);
   color: #000; font-weight: 900;
   padding: 0.8rem 1.5rem; border-radius: 1rem; border: none;
-  text-transform: uppercase; font-size: 0.8rem;
-  box-shadow: 0 0.5rem 1.5rem var(--accent-gold-glow);
+  text-transform: uppercase; font-size: 0.85rem;
+  box-shadow: 0 0.5rem 1.5rem rgba(255, 215, 0, 0.2);
 }
 
-.tile-3d {
-  width: 3rem; height: 4.2rem;
-  background: #fbfbfb; border-radius: 0.5rem;
-  box-shadow: 0 0.3rem 0 #ccc, 0 0.6rem 1rem rgba(0,0,0,0.3);
+/* OYUNCU KOLTUĞU (GRID İÇİNDE FLEX) */
+.seat-container {
+  display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
 }

@@ -38,26 +38,25 @@ export function PlayerSeat({ player, position, isCurrentTurn, playerDiscards, on
   }, [player, isCurrentTurn]);
 
   const getContainerStyle = (): React.CSSProperties => {
-    const base: React.CSSProperties = {
-      position: 'absolute', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem'
+    return {
+      position: 'relative', 
+      zIndex: 10, 
+      display: 'flex', 
+      flexDirection: 'column', 
+      alignItems: 'center', 
+      gap: '0.4rem',
+      padding: '0.5rem',
+      width: 'max-content'
     };
-
-    switch(position) {
-      case 'top': return { ...base, top: 'calc(0.5rem + var(--safe-top))', left: '50%', transform: 'translateX(-50%)' };
-      case 'bottom': return { ...base, bottom: '2rem', right: '1.5rem' };
-      case 'left': return { ...base, top: '50%', left: 'calc(0.5rem + var(--safe-left))', transform: 'translateY(-50%)' };
-      case 'right': return { ...base, top: '50%', right: 'calc(0.5rem + var(--safe-right))', transform: 'translateY(-50%)' };
-      default: return base;
-    }
   };
 
   const getDiscardStyle = (): React.CSSProperties => {
     const base: React.CSSProperties = { position: 'absolute', zIndex: 5, pointerEvents: 'none' };
     switch(position) {
-      case 'top': return { ...base, top: '10rem', left: '50%', transform: 'translateX(-50%)' };
-      case 'bottom': return { ...base, bottom: '10rem', right: '5rem' };
-      case 'left': return { ...base, top: '50%', left: '8rem', transform: 'translateY(-50%)' };
-      case 'right': return { ...base, top: '50%', right: '8rem', transform: 'translateY(-50%)' };
+      case 'top': return { ...base, top: '4.5rem', left: '50%', transform: 'translateX(-50%)' };
+      case 'bottom': return { ...base, bottom: '4.5rem', left: '50%', transform: 'translateX(-50%)' };
+      case 'left': return { ...base, top: '50%', left: '5.5rem', transform: 'translateY(-50%)' };
+      case 'right': return { ...base, top: '50%', right: '5.5rem', transform: 'translateY(-50%)' };
       default: return base;
     }
   };
@@ -72,39 +71,40 @@ export function PlayerSeat({ player, position, isCurrentTurn, playerDiscards, on
         <div style={{ position: 'relative' }}>
           <motion.div
             onClick={() => onSendGift && !player.isBot && setShowGiftMenu(!showGiftMenu)}
-            animate={isCurrentTurn ? { boxShadow: ['0 0 0px var(--accent-gold-glow)', '0 0 30px var(--accent-gold-glow)', '0 0 0px var(--accent-gold-glow)'] } : {}}
+            animate={isCurrentTurn ? { boxShadow: ['0 0 0rem var(--accent-gold-glow)', '0 0 2rem var(--accent-gold-glow)', '0 0 0rem var(--accent-gold-glow)'] } : {}}
             transition={{ duration: 1.5, repeat: Infinity }}
             style={{
-              width: 72, height: 72, borderRadius: 22,
-              padding: 2, background: isCurrentTurn ? 'var(--accent-gold)' : 'var(--glass-border)',
+              width: '4rem', height: '4rem', borderRadius: '1.2rem',
+              padding: '0.15rem', background: isCurrentTurn ? 'var(--accent-gold)' : 'var(--glass-border)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-              zIndex: 10
+              zIndex: 10, position: 'relative'
             }}
           >
-            <div style={{ width: '100%', height: '100%', borderRadius: 20, background: '#12161b', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ width: '100%', height: '100%', borderRadius: '1rem', background: '#12161b', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
               {isTalking && <motion.div animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity }} style={{ position: 'absolute', inset: 0, background: 'rgba(76, 209, 55, 0.2)' }} />}
-              <User size={38} color={isCurrentTurn ? 'var(--accent-gold)' : 'rgba(255,255,255,0.4)'} />
+              <User size={30} color={isCurrentTurn ? 'var(--accent-gold)' : 'rgba(255,255,255,0.4)'} />
               
-              <div style={{ position: 'absolute', top: 5, right: 5, background: 'var(--accent-gold)', borderRadius: 5, width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.5)' }}>
+              <div style={{ position: 'absolute', top: '0.3rem', right: '0.3rem', background: 'var(--accent-gold)', borderRadius: '0.3rem', width: '0.9rem', height: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0.1rem 0.3rem rgba(0,0,0,0.5)' }}>
                 <Star size={10} color="#000" fill="#000" />
               </div>
             </div>
 
+            {/* TAŞ SAYISI ROZETİ (Overlap Fix) */}
             <div style={{
-              position: 'absolute', bottom: -10, left: '50%', transform: 'translateX(-50%)',
+              position: 'absolute', bottom: '-0.4rem', right: '-0.4rem',
               background: 'linear-gradient(135deg, #1e272e 0%, #000 100%)', border: `1px solid ${isCurrentTurn ? 'var(--accent-gold)' : 'var(--glass-border)'}`,
-              borderRadius: 10, padding: '3px 10px', fontSize: 10, fontWeight: 950, color: 'var(--accent-gold)',
-              boxShadow: '0 6px 12px rgba(0,0,0,0.6)', whiteSpace: 'nowrap', zIndex: 20
+              borderRadius: '0.6rem', padding: '0.2rem 0.5rem', fontSize: '0.6rem', fontWeight: 950, color: 'var(--accent-gold)',
+              boxShadow: '0 0.3rem 0.6rem rgba(0,0,0,0.6)', whiteSpace: 'nowrap', zIndex: 20
             }}>
-              {player.tileCount} TAŞ
+              {player.tileCount} T
             </div>
           </motion.div>
 
-          <div style={{ marginTop: 18, textAlign: 'center' }}>
-            <div style={{ fontSize: 12, fontWeight: 950, color: '#fff', textShadow: '0 2px 6px rgba(0,0,0,0.8)', maxWidth: 85, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: 0.5 }}>
+          <div style={{ marginTop: '0.8rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '0.75rem', fontWeight: 950, color: '#fff', textShadow: '0 0.1rem 0.3rem rgba(0,0,0,0.8)', maxWidth: '5rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: 0.5 }}>
               {player.name.toUpperCase()}
             </div>
-            <div style={{ fontSize: 10, fontWeight: 900, color: 'var(--accent-gold)', opacity: 1, letterSpacing: 0.5, marginTop: 2 }}>
+            <div style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--accent-gold)', opacity: 1, letterSpacing: 0.5, marginTop: '0.1rem' }}>
               {player.chips.toLocaleString()} ₺
             </div>
           </div>
@@ -114,10 +114,10 @@ export function PlayerSeat({ player, position, isCurrentTurn, playerDiscards, on
               <motion.div
                 initial={{ opacity: 0, scale: 0.8, x: -60 }} animate={{ opacity: 1, scale: 1, x: -85 }} exit={{ opacity: 0, scale: 0.8 }}
                 className="glass-panel"
-                style={{ position: 'absolute', left: 0, top: -10, padding: 12, display: 'flex', gap: 12, zIndex: 100 }}
+                style={{ position: 'absolute', left: 0, top: -10, padding: '0.8rem', display: 'flex', gap: '0.6rem', zIndex: 100 }}
               >
                 {GIFTS.map(g => (
-                  <button key={g.id} onClick={(e) => { e.stopPropagation(); onSendGift?.(player.id, g.id); setShowGiftMenu(false); }} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 12, fontSize: 24, padding: 8, cursor: 'pointer' }}>
+                  <button key={g.id} onClick={(e) => { e.stopPropagation(); onSendGift?.(player.id, g.id); setShowGiftMenu(false); }} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '0.6rem', fontSize: '1.2rem', padding: '0.4rem', cursor: 'pointer' }}>
                     {g.icon}
                   </button>
                 ))}
@@ -129,7 +129,7 @@ export function PlayerSeat({ player, position, isCurrentTurn, playerDiscards, on
         {isCurrentTurn && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            style={{ color: '#4cd137', fontSize: 8, fontWeight: 950, letterSpacing: 1.5, textShadow: '0 0 10px rgba(76, 209, 55, 0.6)', marginTop: 4 }}
+            style={{ color: '#4cd137', fontSize: '0.5rem', fontWeight: 950, letterSpacing: 1.5, textShadow: '0 0 0.5rem rgba(76, 209, 55, 0.6)', marginTop: '0.2rem' }}
           >
             DÜŞÜNÜYOR
           </motion.div>
