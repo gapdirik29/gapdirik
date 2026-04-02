@@ -7,7 +7,7 @@ import {
 } from './types';
 import { Rack } from './components/Rack';
 import { PlayerSeat } from './components/PlayerSeat';
-import { TableCenter } from './components/TableCenter';
+import { GameEngine } from './components/3d/GameEngine';
 import { ScoreBoard } from './components/ScoreBoard';
 import { Login } from './components/Login';
 import { Lobby } from './components/Lobby';
@@ -99,19 +99,19 @@ export default function App() {
   useEffect(() => {
     if (!socket) return;
     const handlers = {
-      room_update: (data: any) => setGameState(prev => ({ ...prev, players: data.players })),
+      room_update: (data: any) => setGameState((prev: GameState) => ({ ...prev, players: data.players })),
       your_hand: (serverHand: TileData[]) => {
         const r: (TileData | null)[] = Array(30).fill(null);
         serverHand.forEach((t, i) => { r[i] = t; });
         setHand(r);
       },
       game_started: (data: any) => {
-        setGameState(prev => ({ ...prev, ...data, gamePhase: 'playing' }));
+        setGameState((prev: GameState) => ({ ...prev, ...data, gamePhase: 'playing' }));
         setHasDrawn(data.dealerId === socket?.id);
         setScreen('game');
       },
       game_update: (data: any) => {
-        setGameState(prev => ({ ...prev, ...data }));
+        setGameState((prev: GameState) => ({ ...prev, ...data }));
         if (data.openedMelds) setOpenedMelds(data.openedMelds);
         if (data.allDiscards) setAllDiscards(data.allDiscards);
       },
@@ -232,12 +232,21 @@ export default function App() {
                {getSeat('right')}
             </div>
 
-            {/* OYUN MERKEZİ (MERKEZİ OYUN ALANI) */}
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10rem' }}>
-               <TableCenter 
-                 indicator={gameState.indicator} drawPileCount={gameState.drawPileCount} discardPile={gameState.discardPile} 
-                 isMyTurn={gameState.currentTurn === socket?.id} hasDrawn={hasDrawn} tileSkin={tileSkin}
-                 onDraw={() => socket?.emit('draw_tile', { roomId })} onTakeDiscard={() => socket?.emit('take_discard', { roomId })} onDiscard={()=>{}}
+            {/* OYUN MERKEZİ (ELITE PRO 3D ENGINE) */}
+            <div style={{ width: '100%', height: '100%' }}>
+               <GameEngine 
+                 hand={hand.filter(Boolean) as TileData[]}
+                 indicator={gameState.indicator}
+                 players={gameState.players}
+                 isMyTurn={gameState.currentTurn === socket?.id}
+                 onDraw={() => socket?.emit('draw_tile', { roomId })}
+                 onDiscard={(tId) => {
+                    if (gameState.currentTurn === socket?.id && hasDrawn) {
+                       socket?.emit('discard_tile', { roomId, tileId: tId });
+                       setHand(prev => prev.map(t => t?.id === tId ? null : t));
+                       setHasDrawn(false);
+                    }
+                 }}
                />
             </div>
 

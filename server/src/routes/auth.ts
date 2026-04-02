@@ -1,7 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { User } from '../models/User.js';
+import { supabase } from '../lib/supabase.js';
 import axios from 'axios';
 
 const router = express.Router();
@@ -48,27 +48,39 @@ router.post('/register-request', async (req, res) => {
       return res.status(400).json({ error: 'Tüm alanları doldurun' });
     }
 
-    let user = await User.findOne({ $or: [{ email }, { username }] });
+    const { data: user, error: fetchErr } = await supabase
+      .from('profiles')
+      .select('*')
+      .or(`email.eq.${email},username.eq.${username}`)
+      .maybeSingle();
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const verificationCode = generateCode();
 
     if (user) {
-      if (user.isEmailVerified) {
+      if (user.is_verified) {
         return res.status(400).json({ error: 'Bu e-posta veya kullanıcı adı zaten kullanımda' });
       }
-      // Kullanıcı var ama doğrulanmamışsa şifreyi ve kodu güncelle
-      user.password = await bcrypt.hash(password, 10);
-      user.username = username; // Eğer aynı emaille farklı username denemişse
+      
+      await supabase.from('profiles').update({
+        password_hash: hashedPassword,
+        verification_code: verificationCode,
+        username: username
+      }).eq('id', user.id);
     } else {
-      user = new User({
+      // Yeni kullanıcı (UUID otomatik oluşsun veya biz verelim)
+      const { data: newUser, error: insertErr } = await supabase.from('profiles').insert({
+        id: crypto.randomUUID(), // SQL tarafında da UUID default olabilir
         username,
         email,
-        password: await bcrypt.hash(password, 10),
-        isEmailVerified: false
+        password_hash: hashedPassword,
+        is_verified: false,
+        verification_code: verificationCode,
+        chips: 50000,
+        level: 1
       });
+      if (insertErr) throw insertErr;
     }
-
-    const verificationCode = generateCode();
-    user.emailVerificationCode = verificationCode;
-    await user.save();
 
     const templateId = process.env.EMAILJS_REGISTER_TEMPLATE || 'dummy';
     await sendEmailJS(templateId, {
@@ -90,27 +102,28 @@ router.post('/register-verify', async (req, res) => {
     const { email, code } = req.body;
     if (!email || !code) return res.status(400).json({ error: 'Eksik bilgi' });
 
-    const user = await User.findOne({ email });
+    const { data: user, error: fetchErr } = await supabase.from('profiles').select('*').eq('email', email).single();
     if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
 
-    if (user.emailVerificationCode !== code) {
+    if (user.verification_code !== code) {
       return res.status(400).json({ error: 'Doğrulama kodu hatalı' });
     }
 
-    user.isEmailVerified = true;
-    user.emailVerificationCode = undefined;
-    await user.save();
+    await supabase.from('profiles').update({
+      is_verified: true,
+      verification_code: null
+    }).eq('id', user.id);
 
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '7d' });
 
     res.status(201).json({
       token,
       user: {
-        id: user._id,
+        id: user.id,
         username: user.username,
         chips: user.chips,
         level: user.level,
-        stats: user.stats
+        total_points: user.total_points
       }
     });
 
@@ -127,26 +140,26 @@ router.post('/login', async (req, res) => {
     
     if (!email || !password) return res.status(400).json({ error: 'Tüm alanları doldurun' });
 
-    const user = await User.findOne({ email });
+    const { data: user, error: fetchErr } = await supabase.from('profiles').select('*').eq('email', email).single();
     if (!user) return res.status(400).json({ error: 'Geçersiz e-posta veya şifre' });
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await bcrypt.compare(password, user.password_hash);
     if (!isMatch) return res.status(400).json({ error: 'Geçersiz e-posta veya şifre' });
 
-    if (!user.isEmailVerified) {
+    if (!user.is_verified) {
       return res.status(403).json({ error: 'Lütfen önce hesabınızı e-posta üzerinden doğrulayın', unverified: true });
     }
 
-    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ id: user.id }, JWT_SECRET, { expiresIn: '7d' });
 
     res.json({
       token,
       user: {
-        id: user._id,
+        id: user.id,
         username: user.username,
         chips: user.chips,
         level: user.level,
-        stats: user.stats
+        total_points: user.total_points
       }
     });
   } catch (err) {
@@ -159,16 +172,13 @@ router.post('/login', async (req, res) => {
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
-    const user = await User.findOne({ email });
-    
+    const { data: user, error: fetchErr } = await supabase.from('profiles').select('*').eq('email', email).single();
     if (!user) {
       return res.status(404).json({ error: 'Bu e-posta adresi ile kayıtlı kullanıcı bulunamadı' });
     }
 
     const resetCode = generateCode();
-    user.resetPasswordCode = resetCode;
-    // user.resetPasswordExpires = new Date(Date.now() + 15 * 60 * 1000); // Opsiyonel 15 dk
-    await user.save();
+    await supabase.from('profiles').update({ verification_code: resetCode }).eq('id', user.id);
 
     const templateId = process.env.EMAILJS_FORGOT_TEMPLATE || 'dummy';
     await sendEmailJS(templateId, {
@@ -191,16 +201,18 @@ router.post('/reset-password', async (req, res) => {
       return res.status(400).json({ error: 'Eksik bilgi' });
     }
 
-    const user = await User.findOne({ email });
+    const { data: user, error: fetchErr } = await supabase.from('profiles').select('*').eq('email', email).single();
     if (!user) return res.status(404).json({ error: 'Kullanıcı bulunamadı' });
 
-    if (user.resetPasswordCode !== code) {
+    if (user.verification_code !== code) {
        return res.status(400).json({ error: 'Sıfırlama kodu hatalı' });
     }
 
-    user.password = await bcrypt.hash(newPassword, 10);
-    user.resetPasswordCode = undefined;
-    await user.save();
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await supabase.from('profiles').update({ 
+       password_hash: hashedPassword, 
+       verification_code: null 
+    }).eq('id', user.id);
     
     res.json({ success: true, message: 'Şifreniz başarıyla güncellendi' });
   } catch (err) {
@@ -215,11 +227,11 @@ router.post('/daily-bonus', async (req, res) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
 
-    const user = await User.findById(decoded.id);
+    const { data: user, error: fetchErr } = await supabase.from('profiles').select('*').eq('id', decoded.id).single();
     if (!user) return res.status(404).json({ error: 'Kullanıcı yok' });
 
     const now = new Date();
-    const lastBonus = user.stats?.lastDailyBonus ? new Date(user.stats.lastDailyBonus) : new Date(0);
+    const lastBonus = user.last_bonus_date ? new Date(user.last_bonus_date) : new Date(0);
     const diffHours = (now.getTime() - lastBonus.getTime()) / (1000 * 60 * 60);
 
     if (diffHours < 24) {
@@ -227,12 +239,13 @@ router.post('/daily-bonus', async (req, res) => {
     }
 
     const bonusAmount = 50000;
-    user.chips += bonusAmount;
-    if (!user.stats) user.stats = { totalGames: 0, wins: 0, losses: 0, totalWinnings: 0 };
-    user.stats.lastDailyBonus = now.getTime();
-    await user.save();
+    const newChips = (user.chips || 0) + bonusAmount;
+    await supabase.from('profiles').update({
+       chips: newChips,
+       last_bonus_date: now.toISOString()
+    }).eq('id', user.id);
 
-    res.json({ success: true, chips: user.chips, bonus: bonusAmount });
+    res.json({ success: true, chips: newChips, bonus: bonusAmount });
   } catch (err) {
     res.status(500).json({ error: 'Ödül alınırken hata oluştu' });
   }
@@ -244,7 +257,7 @@ router.get('/me', async (req, res) => {
     if (!authHeader || !authHeader.startsWith('Bearer ')) return res.status(401).json({ error: 'Yetkisiz' });
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET) as { id: string };
-    const user = await User.findById(decoded.id).select('-password');
+    const { data: user, error: fetchErr } = await supabase.from('profiles').select('id, username, chips, level, total_points').eq('id', decoded.id).single();
     if (!user) return res.status(404).json({ error: 'Kullanıcı yok' });
     res.json({ user });
   } catch (err) {

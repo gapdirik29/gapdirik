@@ -5,15 +5,13 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import cors from 'cors';
-import mongoose from 'mongoose';
+import { supabase } from './lib/supabase.js';
 import authRoutes from './routes/auth.js';
 import paymentRoutes from './routes/payment.js';
-// @ts-ignore - Bu dosya çalışma zamanında .js olarak çözümlenecek
 import leaderboardRoutes from './routes/leaderboard.js';
 import { TileColor, TileData, GameEngine, COLOR_MULTIPLIERS, FAKE_OKEY_MULTIPLIER } from './gameEngine.js';
 import { BotAI } from './botAI.js';
 import { getOkeyInfo, isWinningHand, isValidMeld, isOkeyTile, isValidDouble, calculateRoundScores, findMelds, findDoubles } from './winChecker.js';
-import { User } from './models/User.js';
 
 const app = express();
 app.use(cors());
@@ -23,37 +21,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 
-// MongoDB Bağlantısı (Hükümdar Seviyesi Hata Teşhisli)
-const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/gapdirik-db';
-
-mongoose.set('bufferCommands', false); // Bağlantı yoksa işlemleri bekletme, direkt hata ver ki görelim!
-
-mongoose.connect(MONGO_URI, {
-  serverSelectionTimeoutMS: 10000,
-  socketTimeoutMS: 45000,
-})
-.then(() => {
-  console.log('\n✨ [MÜJDE] Gapdirik Veritabanı Kapıları Ardına Kadar Açıldı! ✅\n');
-})
-.catch((err) => {
-  console.log('\n🚨 [KRİTİK HATA] Veritabanı Bağlanırken Bir Engel Çıktı!');
-  console.log('──────────────────────────────────────────────────');
-  console.log('SEBEP:', err.message);
-  
-  if (err.message.includes('Authentication failed')) {
-    console.log('İPUCU: MongoDB Atlas > Database Access > Şifre veya Kullanıcı adı YANLIŞ!');
-  } else if (err.message.includes('IP address')) {
-    console.log('İPUCU: MongoDB Atlas > Network Access > 0.0.0.0/0 eklenmemiş veya henüz aktif değil!');
-  } else {
-    console.log('İPUCU: MongoDB Bağlantı Linkinizi (URI) kontrol edin.');
-  }
-  console.log('──────────────────────────────────────────────────\n');
-});
-
-// Bağlantı koptuğunda veya hata olduğunda canlı izle
-mongoose.connection.on('error', err => {
-  console.error('⚠️ [CANLI HATA] Mongoose Hatası:', err);
-});
+// GAPDIRIK "ELITE PRO" SQL ENGINE (SUPABASE ENABLED)
+console.log('\n✨ [MÜJDE] Gapdirik "PRO" SQL deryası saniyeler içinde süzülüyor! ✅\n');
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -194,42 +163,37 @@ function endGame(room: Room, winnerId: string) {
     if (!room.tournamentScores[res.playerId]) room.tournamentScores[res.playerId] = 0;
     room.tournamentScores[res.playerId] += res.score;
     
-    // SADECE GERÇEK OYUNCULARI GÜNCELLE
+    // SADECE GERÇEK OYUNCULARI GÜNCELLE (SUPABASE SQL MİHRABI)
     if (!res.playerId.startsWith('bot-')) {
-       try {
-          const user = await User.findById(res.playerId);
-          if (user && user.stats) {
-             const pointsEarned = res.score <= 0 ? 100 : 10; 
-             user.chips -= Math.max(0, res.score * 10);
-             user.stats.totalTournamentPoints = (user.stats.totalTournamentPoints || 0) + pointsEarned;
-             user.stats.gamesPlayed = (user.stats.gamesPlayed || 0) + 1;
-             
-             // --- XP & LEVEL UP SİSTEMİ ---
-             const xpGain = res.playerId === winnerId ? 250 : 50; 
-             user.xp = (user.xp || 0) + xpGain;
-             const xpGoal = (user.level || 1) * 1000;
-             if (user.xp >= xpGoal) {
-                user.level = (user.level || 1) + 1;
-                user.xp -= xpGoal;
-                io.to(room.id).emit('player_level_up', { playerId: user.id, playerName: user.username, newLevel: user.level });
-             }
-
-             if (res.playerId === winnerId) {
-                user.stats.wins = (user.stats.wins || 0) + 1;
-                user.stats.currentWinStreak = (user.stats.currentWinStreak || 0) + 1;
-                if (user.stats.currentWinStreak > (user.stats.bestWinStreak || 0)) {
-                   user.stats.bestWinStreak = user.stats.currentWinStreak;
+       (async () => {
+          try {
+             const { data: user, error: fetchErr } = await supabase.from('profiles').select('*').eq('id', res.playerId).single();
+             if (user) {
+                const pointsEarned = res.score <= 0 ? 100 : 10;
+                const newChips = (user.chips || 0) - Math.max(0, res.score * 10);
+                const xpGain = res.playerId === winnerId ? 250 : 50;
+                let newXp = (user.xp || 0) + xpGain;
+                let newLevel = user.level || 1;
+                
+                const xpGoal = newLevel * 1000;
+                if (newXp >= xpGoal) {
+                   newLevel++;
+                   newXp -= xpGoal;
+                   io.to(room.id).emit('player_level_up', { playerId: user.id, playerName: user.username, newLevel });
                 }
-             } else {
-                user.stats.losses = (user.stats.losses || 0) + 1;
-                user.stats.currentWinStreak = 0;
+
+                await supabase.from('profiles').update({
+                   chips: newChips,
+                   xp: newXp,
+                   level: newLevel,
+                   wins: (user.wins || 0) + (res.playerId === winnerId ? 1 : 0),
+                   losses: (user.losses || 0) + (res.playerId === winnerId ? 0 : 1),
+                }).eq('id', res.playerId);
              }
-             user.markModified('stats'); // Mühürle: Mongoose nested objeleri bazen görmeyebilir
-             await user.save();
+          } catch (err) {
+             console.error('[SUPABASE ERROR] Stats update failed:', err);
           }
-       } catch (err) {
-          console.error('[DATABASE ERROR] Stats update failed:', err);
-       }
+       })();
     }
   });
 
@@ -460,31 +424,34 @@ io.on('connection', (socket: Socket) => {
       openedType: null,
     };
 
-    // --- YENİ: GÜNLÜK BONUS MANTIĞI & VERİTABANI SENKRONİZASYONU ---
+    // --- YENİ: GÜNLÜK BONUS MANTIĞI & SUPABASE SENKRONİZASYONU ---
     (async () => {
        try {
-          const user = await User.findOne({ username: playerName });
+          const { data: user, error: fetchErr } = await supabase.from('profiles').select('*').eq('username', playerName).single();
           if (user) {
              const now = new Date();
-             const lastClaim = user.lastLogin || new Date(0);
+             const lastClaim = user.last_login ? new Date(user.last_login) : new Date(0);
              const diffHours = (now.getTime() - lastClaim.getTime()) / (1000 * 3600);
              
              if (diffHours >= 24) {
-                user.chips += 10000;
-                user.lastLogin = now;
-                await user.save();
+                const newChips = (user.chips || 0) + 10000;
+                await supabase.from('profiles').update({ 
+                   chips: newChips, 
+                   last_login: now.toISOString() 
+                }).eq('id', user.id);
+                
                 console.log(`🎁 [BONUS] ${playerName} daily bonus 10.000 chips awarded!`);
-                socket.emit('daily_bonus_success', { amount: 10000, newTotal: user.chips });
+                socket.emit('daily_bonus_success', { amount: 10000, newTotal: newChips });
+                newPlayer.chips = newChips;
              } else {
-                user.lastLogin = now; 
-                await user.save();
+                await supabase.from('profiles').update({ 
+                   last_login: now.toISOString() 
+                }).eq('id', user.id);
+                newPlayer.chips = user.chips || START_CHIPS;
              }
-             
-             // Güncel bakiyeyi buraya yansıt
-             newPlayer.chips = user.chips || START_CHIPS;
           }
        } catch (err) {
-          console.error('[DATABASE] Bonus/User sync error:', err);
+          console.error('[SUPABASE] Bonus/User sync error:', err);
        }
 
        if (!room) return;
@@ -1044,17 +1011,15 @@ io.on('connection', (socket: Socket) => {
   });
 });
 
-/* ─── GÜNLÜK RIZIK (Daily Bonus) ─── */
+/* ─── GÜNLÜK RIZIK (Daily Bonus - SUPABASE SQL) ─── */
 app.post('/api/user/daily-bonus', async (req, res) => {
   try {
     const { userId } = req.body;
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ success: false, message: 'Karakter bulunamadı!' });
+    const { data: user, error: fetchErr } = await supabase.from('profiles').select('*').eq('id', userId).single();
+    if (!user) return res.status(404).json({ success: false, message: 'Hükümdar bulunamadı!' });
 
     const now = new Date();
-    if (!user.stats) user.stats = { wins: 0, losses: 0, gamesPlayed: 0, totalTournamentPoints: 0, totalChipsWon: 0, bestWinStreak: 0, currentWinStreak: 0 };
-    
-    const lastBonus = user.stats.lastGameDate || new Date(0);
+    const lastBonus = user.last_bonus_date ? new Date(user.last_bonus_date) : new Date(0);
     const diffHours = (now.getTime() - lastBonus.getTime()) / 36e5;
 
     if (diffHours < 24) {
@@ -1062,14 +1027,16 @@ app.post('/api/user/daily-bonus', async (req, res) => {
       return res.json({ success: false, message: `Hasat vakti gelmedi! ${remaining} saat sonra gel.`, remaining });
     }
 
-    user.chips += 10000;
-    user.stats.lastGameDate = now;
-    await user.save();
+    const newChips = (user.chips || 0) + 10000;
+    await supabase.from('profiles').update({ 
+       chips: newChips, 
+       last_bonus_date: now.toISOString() 
+    }).eq('id', userId);
 
     res.json({ 
        success: true, 
        message: 'HÜKÜMDAR RIZKI ALINDI! 10.000 ÇİP HESABINIZDA!', 
-       chips: user.chips,
+       chips: newChips,
        nextBonus: 24
     });
   } catch (e: any) {
@@ -1077,34 +1044,10 @@ app.post('/api/user/daily-bonus', async (req, res) => {
   }
 });
 
-// [MÜHÜRR] Sunucuyu Sadece Veritabanı Hazırsa Başlat!
-const startServer = async () => {
-  try {
-    console.log('📡 [BAĞLANTI] Veritabanına uzanılıyor...');
-    await mongoose.connect(MONGO_URI, {
-      serverSelectionTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
-    });
-    console.log('\n✨ [MÜJDE] Gapdirik Veritabanı Kapıları Ardına Kadar Açıldı! ✅\n');
-    
-    const PORT = process.env.PORT || 10000;
-    httpServer.listen(PORT, () => {
-      console.log(`\n🎮 Gapdirik Sunucu Canlı! → Port: ${PORT}`);
-      console.log(`🌐 Mod: ${process.env.NODE_ENV || 'Production'}\n`);
-    });
-  } catch (err: any) {
-    console.log('\n🚨 [KRİTİK HATA] Veritabanı Bağlanamadığı İçin Sunucu Başlatılamadı!');
-    console.log('──────────────────────────────────────────────────');
-    console.log('SEBEP:', err.message);
-    
-    if (err.message.includes('Authentication failed')) {
-      console.log('İPUCU: ATLAS Şifresi veya Kullanıcı Adı Yanlış!');
-    } else if (err.message.includes('IP address')) {
-      console.log('İPUCU: ATLAS Network Access > 0.0.0.0/0 eklenmemiş!');
-    }
-    console.log('──────────────────────────────────────────────────\n');
-    process.exit(1); // Sunucuyu kapat, hatayı gör!
-  }
-};
-
-startServer();
+/* ─── SERVER BAŞLAT (ELITE PRO ENGINE) ─── */
+const PORT = process.env.PORT || 10000;
+httpServer.listen(PORT, () => {
+  console.log(`\n🚀 Gapdirik "ELITE PRO" Sunucusu Yayında!`);
+  console.log(`🌐 Mod: ${process.env.NODE_ENV || 'Production'}`);
+  console.log(`🔗 Port: ${PORT}\n`);
+});

@@ -1,10 +1,10 @@
 import express from 'express';
 import Stripe from 'stripe';
-import { User } from '../models/User.js';
+import { supabase } from '../lib/supabase.js';
 
 const router = express.Router();
 
-// 1. Ödeme Aracını Dinamik Olarak Oluştur (Anahtarı her zaman env'den taze oku)
+// 1. Ödeme Aracını Dinamik Olarak Oluştur
 const getStripe = () => {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) throw new Error('Stripe API Key bulunamadı! Lütfen .env dosyasını kontrol edin.');
@@ -22,7 +22,7 @@ const ALL_PACKS: { [key: string]: { name: string, price: number, chips: number }
 router.post('/create-checkout-session', async (req, res) => {
   try {
     const { items, userId } = req.body;
-    const stripe = getStripe(); // Her seferinde taze anahtarla sisteme bağlan!
+    const stripe = getStripe();
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ error: 'Sepetiniz boş!' });
@@ -67,7 +67,7 @@ router.post('/create-checkout-session', async (req, res) => {
   }
 });
 
-// 2. WEBHOOK (ÖDEME BİTİNCE ÇİPLERİ VE EŞYALARI YÜKLE)
+// 2. WEBHOOK (ÖDEME BİTİNCE ÇİPLERİ YÜKLE - SQL MİHRABI)
 router.post('/webhook', async (req, res) => {
   const event = req.body;
 
@@ -75,14 +75,13 @@ router.post('/webhook', async (req, res) => {
     const session = event.data.object;
     const userId = session.metadata.userId;
     const chipsToAdd = parseInt(session.metadata.totalChips);
-    const purchasedItems = session.metadata.itemDetails;
 
     try {
-      const user = await User.findById(userId);
+      const { data: user, error: fetchErr } = await supabase.from('profiles').select('chips, username').eq('id', userId).single();
       if (user) {
-        user.chips += chipsToAdd;
-        await user.save();
-        console.log(`🛒 [SEPET ÖDEMESİ BAŞARILI] ${user.username} kullanıcısına ${chipsToAdd} çip yüklendi!`);
+        const newChips = (user.chips || 0) + chipsToAdd;
+        await supabase.from('profiles').update({ chips: newChips }).eq('id', userId);
+        console.log(`🛒 [SEPET ÖDEMESİ BAŞARILI] ${user.username} kullanıcısına ${chipsToAdd} çip SQL deryasında yüklendi!`);
       }
     } catch (err) {
       console.error('❌ Sepet çip yükleme hatası:', err);
@@ -92,7 +91,7 @@ router.post('/webhook', async (req, res) => {
   res.json({ received: true });
 });
 
-// 3. ÖDEMEYİ MANUEL DOĞRULA VE ÇİPLERİ YÜKLE (Garantici Yöntem)
+// 3. ÖDEMEYİ MANUEL DOĞRULA (Garantici SQL Yöntemi)
 router.get('/confirm-session/:sessionId', async (req, res) => {
   try {
     const { sessionId } = req.params;
@@ -102,21 +101,18 @@ router.get('/confirm-session/:sessionId', async (req, res) => {
     if (session.payment_status === 'paid' && session.metadata?.processed !== 'true') {
       const userId = session.metadata?.userId;
       const chipsToAdd = parseInt(session.metadata?.totalChips || '0');
-      const itemDetails = session.metadata?.itemDetails || '';
 
-      const user = await User.findById(userId);
+      const { data: user, error: fetchErr } = await supabase.from('profiles').select('chips, username').eq('id', userId || '').single();
       if (user) {
-        user.chips += chipsToAdd;
-        // Opsiyonel: Eşyaları (Inventory) de burada ekleyebiliriz
-        await user.save();
+        const newChips = (user.chips || 0) + chipsToAdd;
+        await supabase.from('profiles').update({ chips: newChips }).eq('id', userId!);
         
-        // Bu ödemeyi işlendi diye işaretle (Tekrar yükleme olmasın)
         await stripe.checkout.sessions.update(sessionId, {
           metadata: { ...session.metadata, processed: 'true' }
         });
 
-        console.log(`✅ [ÖDEME ONAYLANDI] ${user.username} için ${chipsToAdd} çip yüklendi!`);
-        return res.json({ success: true, chips: user.chips, username: user.username });
+        console.log(`✅ [ÖDEME ONAYLANDI] ${user.username} için ${chipsToAdd} çip SQL deryasına nakşedildi!`);
+        return res.json({ success: true, chips: newChips, username: user.username });
       }
     } else if (session.metadata?.processed === 'true') {
        return res.json({ success: true, message: 'Zaten işlendi' });

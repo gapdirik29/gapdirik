@@ -1,17 +1,20 @@
 import express from 'express';
-import { User } from '../models/User.js';
+import { supabase } from '../lib/supabase.js';
 
 const router = express.Router();
 
 /**
- * Küresel Sıralamayı Getir (Puan bazlı, İlk 10)
+ * Küresel Sıralamayı Getir (Puan bazlı, İlk 10 - SQL HIZI)
  */
 router.get('/top', async (req, res) => {
   try {
-    const topPlayers = await User.find({})
-      .sort({ 'stats.totalTournamentPoints': -1 })
-      .limit(10)
-      .select('username level stats.totalTournamentPoints stats.wins stats.gamesPlayed chips');
+    const { data: topPlayers, error } = await supabase
+      .from('profiles')
+      .select('username, level, total_points, wins, games_played, chips')
+      .order('total_points', { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
 
     res.json({
       success: true,
@@ -23,24 +26,28 @@ router.get('/top', async (req, res) => {
 });
 
 /**
- * Mevcut kullanıcının sıralamasını getir
+ * Mevcut kullanıcının sıralamasını getir (SQL COUNT MİHRABI)
  */
 router.get('/my-rank/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const user = await User.findById(id);
+    const { data: user, error: fetchErr } = await supabase.from('profiles').select('*').eq('id', id).single();
     if (!user) return res.status(404).json({ success: false, message: 'Kullanıcı bulunamadı' });
 
-    const rank = await User.countDocuments({
-      'stats.totalTournamentPoints': { $gt: user.stats?.totalTournamentPoints || 0 }
-    }) + 1;
+    // Kendisinden daha fazla puanı olanları say
+    const { count, error: countErr } = await supabase
+      .from('profiles')
+      .select('*', { count: 'exact', head: true })
+      .gt('total_points', user.total_points || 0);
+
+    const rank = (count || 0) + 1;
 
     res.json({
       success: true,
       rank,
       user: {
         username: user.username,
-        points: user.stats?.totalTournamentPoints || 0,
+        points: user.total_points || 0,
         chips: user.chips
       }
     });
