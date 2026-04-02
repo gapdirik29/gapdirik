@@ -295,8 +295,8 @@ export default function App() {
 
   return (
     <div className={`theme-${theme} game-layout`}>
-      {/* ÜST PANEL (DRAGGABLE) */}
-      <motion.header drag dragMomentum={false} className="header-stats" style={{ zIndex: 2000, cursor: 'move' }}>
+      {/* ÜST PANEL (SABİTLENDİ) */}
+      <header className="header-stats" style={{ zIndex: 2000 }}>
         <ScoreBoard 
           indicator={gameState.indicator} 
           highestSeriesValue={gameState.highestSeriesValue} 
@@ -311,15 +311,15 @@ export default function App() {
         >
           KALK
         </button>
-      </motion.header>
+      </header>
 
-      {/* SOL OYUNCU (DRAGGABLE) */}
-      <motion.aside drag dragMomentum={false} style={{ gridArea: 'left-player', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1500, cursor: 'move' }}>
+      {/* SOL OYUNCU (SABİTLENDİ) */}
+      <aside style={{ gridArea: 'left-player', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1500 }}>
          {getSeat('left')}
-      </motion.aside>
+      </aside>
 
-      {/* OYUN MERKEZİ (DRAGGABLE) */}
-      <motion.main drag dragMomentum={false} className="center-board-area" style={{ zIndex: 1400, cursor: 'move' }}>
+      {/* OYUN MERKEZİ (SABİTLENDİ) */}
+      <main className="center-board-area" style={{ zIndex: 1400 }}>
          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', width: '100%' }}>
             <div style={{ height: '8rem', display: 'flex', alignItems: 'center' }}>
                {getSeat('top')}
@@ -337,13 +337,13 @@ export default function App() {
               tileSkin={tileSkin} 
             />
          </div>
-      </motion.main>
+      </main>
 
-      {/* SAĞ OYUNCU + SOSYAL HUB (DRAGGABLE) */}
-      <motion.aside drag dragMomentum={false} style={{ gridArea: 'right-player', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem', zIndex: 1500, cursor: 'move' }}>
+      {/* SAĞ OYUNCU + SOSYAL HUB (SABİTLENDİ - DİKEY) */}
+      <aside style={{ gridArea: 'right-player', display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem', zIndex: 1500 }}>
          {getSeat('right')}
          
-         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginLeft: 'auto', paddingRight: '0.5rem' }}>
+         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', paddingRight: '0.5rem' }}>
             {['Helal!', 'Hadi!', 'Okey Boşa!', 'Nasip...'].map(msg => (
               <motion.button key={msg} whileTap={{ scale: 0.9 }} 
                 onClick={() => { socket?.emit('send_message', { roomId, message: msg }); soundManager.play('click'); }}
@@ -353,14 +353,14 @@ export default function App() {
               </motion.button>
             ))}
          </div>
-      </motion.aside>
+      </aside>
 
-      {/* ISTAKA ALANI (DRAGGABLE - Sadece Üst Kısmı) */}
+      {/* ISTAKA ALANI (ALT OYUNCU + ISTAKA) */}
       <footer className="rack-footer">
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', gap: '0.5rem' }}>
-           <motion.div drag dragMomentum={false} style={{ transform: 'scale(0.8)', marginBottom: '-1rem', zIndex: 1600, cursor: 'move' }}>
+           <div style={{ transform: 'scale(0.8)', marginBottom: '-1rem', zIndex: 1600 }}>
               {getSeat('bottom')}
-           </motion.div>
+           </div>
            
            <Rack 
              hand={hand} 
