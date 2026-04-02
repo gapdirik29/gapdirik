@@ -51,12 +51,15 @@ export function PlayerSeat({ player, position, isCurrentTurn, playerDiscards, on
   };
 
   const getDiscardStyle = (): React.CSSProperties => {
-    const base: React.CSSProperties = { position: 'absolute', zIndex: 5, pointerEvents: 'none' };
+    const base: React.CSSProperties = { 
+        position: 'absolute', zIndex: 5, pointerEvents: 'none',
+        transform: 'scale(0.85)' /* Kompaktlık için %85 ölçek */
+    };
     switch(position) {
-      case 'top': return { ...base, top: '4.5rem', left: '50%', transform: 'translateX(-50%)' };
-      case 'bottom': return { ...base, bottom: '4.5rem', left: '50%', transform: 'translateX(-50%)' };
-      case 'left': return { ...base, top: '50%', left: '5.5rem', transform: 'translateY(-50%)' };
-      case 'right': return { ...base, top: '50%', right: '5.5rem', transform: 'translateY(-50%)' };
+      case 'top': return { ...base, top: '7rem', left: '50%', transform: 'translateX(-50%) scale(0.85)' };
+      case 'bottom': return { ...base, bottom: '6.5rem', left: '50%', transform: 'translateX(-50%) scale(0.85)' };
+      case 'left': return { ...base, top: '50%', left: '7rem', transform: 'translateY(-50%) scale(0.85)' };
+      case 'right': return { ...base, top: '50%', right: '7rem', transform: 'translateY(-50%) scale(0.85)' };
       default: return base;
     }
   };

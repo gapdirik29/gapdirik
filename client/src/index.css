@@ -19,7 +19,7 @@ body, #root {
   width: 100vw; height: 100vh;
   background: var(--bg-main);
   background-image: 
-    radial-gradient(circle at center, rgba(34, 139, 34, 0.2) 0%, transparent 100%),
+    radial-gradient(circle at center, rgba(34, 139, 34, 0.4) 0%, transparent 80%),
     url('https://www.transparenttextures.com/patterns/felt.png'); /* Yeşil Çuha Dokusu */
   overflow: hidden;
   font-family: 'Outfit', sans-serif;
@@ -31,7 +31,19 @@ body, #root {
   display: grid;
   width: 100vw; height: 100vh;
   position: relative;
-  box-shadow: inset 0 0 10rem rgba(0,0,0,0.5); /* Masa Kenar Derinliği */
+  box-shadow: inset 0 0 15rem rgba(0,0,0,0.8); /* Daha Derin Masa Kenarı */
+}
+
+/* MASA ÇUKURU (TABLE PIT EFFECT) */
+.center-board-area::before {
+  content: '';
+  position: absolute;
+  inset: 5rem;
+  background: rgba(0,0,0,0.1);
+  border-radius: 4rem;
+  box-shadow: inset 0 0 5rem rgba(0,0,0,0.5);
+  pointer-events: none;
+  z-index: 0;
 }
 
 /* LANDSCAPE (YATAY) - TAM ERGONOMİ MÜHÜRLENDİ */
@@ -39,11 +51,11 @@ body, #root {
   .game-layout {
     grid-template-areas: 
       "header header header"
-      "left-player center right-player"
+      "main main main"
       "footer footer footer";
     grid-template-columns: 1fr 2fr 1fr;
-    grid-template-rows: 4rem 1fr auto;
-    padding: var(--safe-top) 1.5rem var(--safe-bottom) 1.5rem;
+    grid-template-rows: 3.8rem 1fr auto;
+    padding: var(--safe-top) 0rem var(--safe-bottom) 0rem;
   }
 }
 

@@ -93,6 +93,7 @@ export default function App() {
   const [tookDiscard] = useState(false);
   const [gameOverData, setGameOverData] = useState<any>(null);
   const [activeGifts] = useState<any[]>([]);
+  const [isScoreOpen, setIsScoreOpen] = useState(false);
 
   // 2. SOCKET DINLEYICILERI
   useEffect(() => {
@@ -197,6 +198,7 @@ export default function App() {
             </div>
 
             <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+               <button onClick={() => setIsScoreOpen(!isScoreOpen)} className="glass-panel" style={{ padding: '0.4rem 0.8rem', border: '1px solid var(--accent-gold)', background: isScoreOpen ? 'var(--accent-gold)' : 'rgba(255,204,0,0.1)', color: isScoreOpen ? '#000' : 'var(--accent-gold)', fontSize: '0.65rem', fontWeight: 950, borderRadius: '0.5rem' }}>YAZBOZ</button>
                <button onClick={() => setIsStoreOpen(true)} className="glass-panel" style={{ padding: '0.4rem 0.8rem', border: '1px solid var(--accent-gold)', background: 'rgba(255,204,0,0.1)', color: 'var(--accent-gold)', fontSize: '0.65rem', fontWeight: 950, borderRadius: '0.5rem' }}>ÇİPSATINAL</button>
                <button className="glass-panel" style={{ width: '2.2rem', height: '2.2rem', border: 'none', background: 'transparent', fontSize: '1.2rem' }}>⚙️</button>
                <button className="glass-panel" style={{ width: '2.2rem', height: '2.2rem', border: 'none', background: 'transparent', fontSize: '1.2rem' }}>✉️</button>
@@ -219,25 +221,42 @@ export default function App() {
                </button>
             </div>
 
-            {/* MASADAKİ DİĞER OYUNCULAR (FIXED POSITIONS) */}
-            <div style={{ position: 'absolute', top: '1rem', left: '50%', transform: 'translateX(-50%)', zIndex: 500 }}>
+            {/* MASADAKİ DİĞER OYUNCULAR (ELITE DIAMOND POSITIONS) */}
+            <div style={{ position: 'absolute', top: '2rem', left: '50%', transform: 'translateX(-50%)', zIndex: 1000 }}>
                {getSeat('top')}
             </div>
-            <div style={{ position: 'absolute', left: '1.5rem', top: '45%', transform: 'translateY(-50%)', zIndex: 500 }}>
+            <div style={{ position: 'absolute', left: '2rem', top: '48%', transform: 'translateY(-50%)', zIndex: 1000 }}>
                {getSeat('left')}
             </div>
-            <div style={{ position: 'absolute', right: '1.5rem', top: '45%', transform: 'translateY(-50%)', zIndex: 500 }}>
+            <div style={{ position: 'absolute', right: '2rem', top: '48%', transform: 'translateY(-50%)', zIndex: 1000 }}>
                {getSeat('right')}
             </div>
 
-            {/* OYUN MERKEZİ (TABLE CENTER) */}
-            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {/* OYUN MERKEZİ (MERKEZİ OYUN ALANI) */}
+            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '10rem' }}>
                <TableCenter 
                  indicator={gameState.indicator} drawPileCount={gameState.drawPileCount} discardPile={gameState.discardPile} 
                  isMyTurn={gameState.currentTurn === socket?.id} hasDrawn={hasDrawn} tileSkin={tileSkin}
                  onDraw={() => socket?.emit('draw_tile', { roomId })} onTakeDiscard={() => socket?.emit('take_discard', { roomId })} onDiscard={()=>{}}
                />
             </div>
+
+            {/* YAZBOZ BOARD (SLIDE-OUT) */}
+            <AnimatePresence>
+               {isScoreOpen && (
+                 <motion.div
+                   initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
+                   transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                   className="glass-panel"
+                   style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '22rem', padding: '2rem', zIndex: 5000, borderLeft: '3px solid var(--accent-gold)', borderRadius: '2rem 0 0 2rem', background: 'rgba(5, 15, 20, 0.98)' }}
+                 >
+                    <div style={{ height: '100%', overflowY: 'auto' }}>
+                       <ScoreBoard indicator={gameState.indicator} highestSeriesValue={gameState.highestSeriesValue} highestDoublesValue={gameState.highestDoublesValue} players={gameState.players} roundNumber={gameState.roundNumber} />
+                    </div>
+                    <button onClick={() => setIsScoreOpen(false)} style={{ position: 'absolute', top: '1rem', left: '-1rem', width: '2rem', height: '2rem', borderRadius: '50%', background: 'var(--accent-gold)', border: 'none', fontWeight: 1000, cursor: 'pointer', boxShadow: '0 0.2rem 0.5rem rgba(0,0,0,0.5)' }}>×</button>
+                 </motion.div>
+               )}
+            </AnimatePresence>
           </main>
 
           {/* ALT PANEL (ISTAKA + DURUM) */}
