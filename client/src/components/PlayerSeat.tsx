@@ -100,12 +100,28 @@ export function PlayerSeat({ player, position, isCurrentTurn, playerDiscards, on
             </div>
           </motion.div>
 
-          <div style={{ marginTop: '0.8rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 950, color: '#fff', textShadow: '0 0.1rem 0.3rem rgba(0,0,0,0.8)', maxWidth: '5rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', letterSpacing: 0.5 }}>
-              {player.name.toUpperCase()}
+          <div style={{ marginTop: '0.6rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem' }}>
+            {/* VIP İSİMLİK (NAMEPLATE) */}
+            <div style={{ 
+              background: 'rgba(0,0,0,0.6)', padding: '0.2rem 0.8rem', borderRadius: '0.5rem', 
+              border: '1px solid rgba(255,255,255,0.1)', minWidth: '4.5rem', textAlign: 'center',
+              boxShadow: '0 0.2rem 0.5rem rgba(0,0,0,0.3)'
+            }}>
+              <div style={{ fontSize: '0.65rem', fontWeight: 950, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.5, maxWidth: '4.5rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {player.name}
+              </div>
             </div>
-            <div style={{ fontSize: '0.6rem', fontWeight: 900, color: 'var(--accent-gold)', opacity: 1, letterSpacing: 0.5, marginTop: '0.1rem' }}>
-              {player.chips.toLocaleString()} ₺
+            
+            {/* ALTIN BAKİYE KUTUSU (GOLDEN CHIP BOX) */}
+            <div style={{ 
+              background: 'linear-gradient(180deg, #ffcc00 0%, #ff9500 100%)', 
+              padding: '0.15rem 0.5rem', borderRadius: '0.4rem', 
+              border: '1px solid rgba(0,0,0,0.1)', minWidth: '4rem', textAlign: 'center',
+              boxShadow: '0 0.2rem 0.4rem rgba(0,0,0,0.2)'
+            }}>
+              <div style={{ fontSize: '0.6rem', fontWeight: 950, color: '#000', letterSpacing: -0.2 }}>
+                {player.chips.toLocaleString()} ₺
+              </div>
             </div>
           </div>
 

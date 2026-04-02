@@ -147,35 +147,46 @@ const RackComponent = ({
         )}
       </AnimatePresence>
 
-      {/* 3. ANA ISTAKA (RACK) - LÜKS 3D TASARIM */}
+      {/* 3. ANA ISTAKA (RACK) - ROYAL WOOD DESIGN */}
       <div
         ref={rackRef}
         style={{
-          width: '100%', height: 215, pointerEvents: 'auto',
-          background: 'linear-gradient(180deg, #1a2228 0%, #0d1216 100%)',
-          backdropFilter: 'blur(25px)',
-          borderTop: '2.5px solid rgba(255, 215, 0, 0.3)',
-          padding: '14px 8px', display: 'flex', flexDirection: 'column', gap: 12,
-          boxShadow: '0 -15px 50px rgba(0,0,0,0.8), inset 0 2px 10px rgba(255,255,255,0.05)',
+          width: '100%', minHeight: 230, pointerEvents: 'auto',
+          background: 'linear-gradient(180deg, #3a2212 0%, #1a0f08 100%)', /* Maun Ahşap */
+          backgroundImage: 'url("https://www.transparenttextures.com/patterns/dark-wood.png")',
+          borderTop: '3px solid var(--accent-gold)',
+          padding: '12px 10px', display: 'flex', alignItems: 'center', gap: 15,
+          boxShadow: '0 -20px 50px rgba(0,0,0,0.9), inset 0 3px 10px rgba(255,255,255,0.05)',
           position: 'relative', overflow: 'visible',
-          borderRadius: '24px 24px 0 0'
+          borderRadius: '30px 30px 0 0'
         }}
       >
-        {/* ISTAKA DOKUSU (ARTISAN) */}
-        <div style={{ position: 'absolute', inset: 0, opacity: 0.1, pointerEvents: 'none', background: 'repeating-linear-gradient(90deg, transparent, transparent 40px, rgba(255,255,255,0.1) 41px)' }} />
+        {/* SOL FLANK (SIRALAMA BUTONLARI) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+           <button onClick={onSortSeries} className="glass-panel" style={{ width: '4rem', height: '3.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <ListOrdered size={16} color="var(--accent-gold)" />
+              <span style={{ fontSize: '0.45rem', fontWeight: 950, color: '#fff', marginTop: 4 }}>SERİ DİZ</span>
+           </button>
+           <button onClick={onSortDoubles} className="glass-panel" style={{ width: '4rem', height: '3.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <LayoutGrid size={16} color="var(--accent-gold)" />
+              <span style={{ fontSize: '0.45rem', fontWeight: 950, color: '#fff', marginTop: 4 }}>ÇİFT DİZ</span>
+           </button>
+        </div>
 
+        {/* MERKEZ (TAŞLAR) */}
         <div style={{
-          flex: 1, display: 'grid',
+          flex: 1, display: 'grid', height: '100%',
           gridTemplateColumns: 'repeat(15, 1fr)', gridTemplateRows: 'repeat(2, 1fr)',
-          gap: 5, position: 'relative', zIndex: 1
+          gap: 6, position: 'relative', zIndex: 1,
+          padding: '10px 0'
         }}>
           {hand.map((tile, idx) => (
             <div
               key={`slot-${idx}`}
               style={{
-                background: 'rgba(0,0,0,0.4)', borderRadius: 10,
+                background: 'rgba(0,0,0,0.5)', borderRadius: 8,
                 position: 'relative', display: 'flex', alignItems: 'stretch', justifyContent: 'stretch',
-                boxShadow: 'inset 0 4px 8px rgba(0,0,0,0.6), 0 1px 1px rgba(255,255,255,0.05)',
+                boxShadow: 'inset 0 4px 10px rgba(0,0,0,0.8)',
                 border: '1px solid rgba(255,255,255,0.02)'
               }}
             >
@@ -195,6 +206,27 @@ const RackComponent = ({
               )}
             </div>
           ))}
+        </div>
+
+        {/* SAĞ FLANK (AKSİYON BUTONU) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+           <button 
+             disabled={!canOpenSeries && !canOpenDoubles}
+             onClick={() => canOpenDoubles ? onOpenDoubles() : onOpenSeries()}
+             style={{ 
+                width: '6rem', height: '6rem', borderRadius: '1.2rem',
+                background: (canOpenSeries || canOpenDoubles) ? 'linear-gradient(180deg, #ffcc00 0%, #ff9500 100%)' : 'rgba(0,0,0,0.5)',
+                border: '2px solid rgba(255,255,255,0.2)',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                cursor: (canOpenSeries || canOpenDoubles) ? 'pointer' : 'default',
+                boxShadow: (canOpenSeries || canOpenDoubles) ? '0 10px 25px rgba(255, 204, 0, 0.4)' : 'none',
+                opacity: (canOpenSeries || canOpenDoubles) ? 1 : 0.3,
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+             }}
+           >
+              <Unlock size={28} color="#000" />
+              <span style={{ fontSize: '0.8rem', fontWeight: 1000, color: '#000', marginTop: 4 }}>AÇ</span>
+           </button>
         </div>
         
         {/* Ortasındaki Ayırıcı Çizgi */}
