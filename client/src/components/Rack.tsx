@@ -58,136 +58,95 @@ const RackComponent = ({
   return (
     <div style={{
       position: 'fixed', bottom: 0, left: 0, right: 0,
-      zIndex: 800, 
-      paddingBottom: 'calc(10px + var(--safe-bottom))',
+      zIndex: 1800, 
+      paddingBottom: 'calc(5px + var(--safe-bottom))',
       display: 'flex', flexDirection: 'column', gap: 10,
       pointerEvents: 'none'
     }}>
       
-      {/* 1. ÜST BİLGİ VE AKSİYON HUB (Interactive) */}
+      {/* 1. FLOATING STATUS HUB (GLASSMORPHIC) */}
       <div style={{ 
         display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', 
-        padding: '0 12px', pointerEvents: 'auto' 
+        padding: '0 1.5rem', pointerEvents: 'auto' 
       }}>
         
-        {/* SOL: BİLGİ PANELİ */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div className="glass-panel" style={{ padding: '6px 12px', display: 'flex', gap: 10, alignItems: 'center' }}>
-             <div style={{ fontSize: 10, fontWeight: 950, color: 'var(--accent-gold)' }}>BARAJ: {highestSeriesValue}</div>
-             <div style={{ width: 1, height: 10, background: 'rgba(255,255,255,0.1)' }} />
-             <div style={{ fontSize: 10, fontWeight: 950, color: '#fff' }}>ELİM: {seriesPoints}</div>
+        {/* SOL: BİLGİ & YAZBOZ KONTROL */}
+        <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
+          <div className="glass-panel" style={{ padding: '0.5rem 1.2rem', display: 'flex', gap: '1rem', alignItems: 'center', background: 'rgba(5, 20, 15, 0.9)', borderColor: 'var(--accent-gold)' }}>
+             <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.5rem', fontWeight: 1000, opacity: 0.6, color: '#fff' }}>BARAJ</span>
+                <span style={{ fontSize: '0.8rem', fontWeight: 1000, color: 'var(--accent-gold)' }}>{highestSeriesValue}</span>
+             </div>
+             <div style={{ width: 1, height: '1.2rem', background: 'rgba(255,215,0,0.2)' }} />
+             <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ fontSize: '0.5rem', fontWeight: 1000, opacity: 0.6, color: '#fff' }}>ELİNİZ</span>
+                <span style={{ fontSize: '0.8rem', fontWeight: 1000, color: '#fff' }}>{seriesPoints}</span>
+             </div>
           </div>
+          
           <button 
             onClick={() => setIsScoreOpen(!isScoreOpen)}
             className="glass-panel" 
-            style={{ padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 6, border: isScoreOpen ? '1px solid var(--accent-gold)' : '1px solid var(--glass-border)' }}
+            style={{ 
+              width: '2.8rem', height: '2.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: isScoreOpen ? 'var(--accent-gold)' : 'rgba(0,0,0,0.5)',
+              borderColor: isScoreOpen ? 'var(--accent-gold)' : 'var(--glass-border)'
+            }}
           >
-             <Info size={14} color="var(--accent-gold)" />
-             <span style={{ fontSize: 10, fontWeight: 950, color: '#fff' }}>YAZBOZ</span>
-             {isScoreOpen ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+             <Info size={20} color={isScoreOpen ? '#000' : 'var(--accent-gold)'} />
           </button>
         </div>
 
-        {/* ORTA: ANA AKSİYONLAR */}
-        <div style={{ display: 'flex', gap: 8 }}>
-           <button onClick={onSortSeries} className="btn-premium" style={{ height: 45, padding: '0 15px', background: 'rgba(255,255,255,0.05)', color: '#fff' }}>
-             <ListOrdered size={18} />
-           </button>
-           <button onClick={onSortDoubles} className="btn-premium" style={{ height: 45, padding: '0 15px', background: 'rgba(255,255,255,0.05)', color: '#fff' }}>
-             <LayoutGrid size={18} />
-           </button>
-
-           <AnimatePresence>
-             {appendableTiles.length > 0 && (
-               <motion.button 
-                 initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
-                 onClick={onAppends} className="btn-premium" 
-                 style={{ height: 45, background: '#4cd137', color: '#000', padding: '0 15px' }}
-               >
-                 <ArrowUpCircle size={18} /> İŞLE
-               </motion.button>
-             )}
-           </AnimatePresence>
-
-           <button 
-             disabled={!canOpenSeries}
-             onClick={onOpenSeries} 
-             className="btn-premium"
-             style={{ height: 45, minWidth: 100, opacity: canOpenSeries ? 1 : 0.4 }}
-           >
-             <Unlock size={18} /> AÇ
-           </button>
-        </div>
-
-        {/* SAĞ: TAŞ SAYISI */}
-        <div className="glass-panel" style={{ padding: '10px 15px', display: 'flex', flexDirection: 'column', alignItems: 'center', borderColor: 'var(--accent-gold)' }}>
-           <div style={{ fontSize: 18, fontWeight: 950, color: 'var(--accent-gold)' }}>{handCount}</div>
-           <div style={{ fontSize: 8, fontWeight: 900, opacity: 0.5 }}>TAŞ</div>
+        {/* SAĞ: TAŞ SAYISI (ROYAL BADGE) */}
+        <div className="glass-panel" style={{ padding: '0.6rem 1.2rem', display: 'flex', alignItems: 'center', gap: '0.8rem', borderColor: 'var(--accent-gold)' }}>
+           <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '0.5rem', fontWeight: 1000, opacity: 0.6 }}>KALAN</div>
+              <div style={{ fontSize: '0.9rem', fontWeight: 1000, color: 'var(--accent-gold)' }}>{handCount} TAŞ</div>
+           </div>
         </div>
       </div>
 
-      {/* 2. YAZBOZ BOARD (Overlay) */}
-      <AnimatePresence>
-        {isScoreOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-            className="glass-panel"
-            style={{ position: 'fixed', bottom: 320, left: 12, right: 12, padding: 20, zIndex: 900, pointerEvents: 'auto' }}
-          >
-             <div style={{ fontSize: 13, fontWeight: 950, color: 'var(--accent-gold)', marginBottom: 15, textAlign: 'center', letterSpacing: 1 }}>TURNUVA PUANLARI</div>
-             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {tournamentScores && Object.entries(tournamentScores).map(([pId, score]) => (
-                   <div key={pId} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                      <span style={{ fontWeight: 800, fontSize: 12 }}>{pId === 'local' ? 'SİZİN SKORUNUZ' : 'OYUNCU'}</span>
-                      <span style={{ color: score <= 0 ? '#4cd137' : '#ff4757', fontWeight: 950 }}>{score}</span>
-                   </div>
-                ))}
-             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* 3. ANA ISTAKA (RACK) - ROYAL WOOD DESIGN */}
+      {/* 2. ANA ISTAKA (ULTRA-PREMIUM CARBON/WOOD) */}
       <div
         ref={rackRef}
         style={{
-          width: '100%', minHeight: 230, pointerEvents: 'auto',
-          background: 'linear-gradient(180deg, #3a2212 0%, #1a0f08 100%)', /* Maun Ahşap */
-          backgroundImage: 'url("https://www.transparenttextures.com/patterns/dark-wood.png")',
-          borderTop: '3px solid var(--accent-gold)',
-          padding: '12px 10px', display: 'flex', alignItems: 'center', gap: 15,
-          boxShadow: '0 -20px 50px rgba(0,0,0,0.9), inset 0 3px 10px rgba(255,255,255,0.05)',
-          position: 'relative', overflow: 'visible',
-          borderRadius: '30px 30px 0 0'
+          width: '100%', minHeight: '14rem', pointerEvents: 'auto',
+          background: 'linear-gradient(180deg, #12161b 0%, #050505 100%)',
+          borderTop: '0.2rem solid var(--accent-gold)',
+          padding: '0.8rem 1.2rem', display: 'flex', alignItems: 'center', gap: '1.5rem',
+          boxShadow: '0 -2rem 4rem rgba(0,0,0,0.95)',
+          position: 'relative', borderRadius: '2.5rem 2.5rem 0 0',
+          overflow: 'hidden'
         }}
       >
-        {/* SOL FLANK (SIRALAMA BUTONLARI) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-           <button onClick={onSortSeries} className="glass-panel" style={{ width: '4rem', height: '3.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <ListOrdered size={16} color="var(--accent-gold)" />
-              <span style={{ fontSize: '0.45rem', fontWeight: 950, color: '#fff', marginTop: 4 }}>SERİ DİZ</span>
+        {/* CARBON DOKUSU (OVERLAY) */}
+        <div style={{ position: 'absolute', inset: 0, opacity: 0.05, backgroundImage: 'url("https://www.transparenttextures.com/patterns/carbon-fibre.png")', pointerEvents: 'none' }} />
+
+        {/* SOL AKSİYON PANELİ */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', zIndex: 2 }}>
+           <button onClick={onSortSeries} className="glass-panel" style={{ width: '3.8rem', height: '3.8rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <ListOrdered size={20} color="var(--accent-gold)" />
+              <span style={{ fontSize: '0.45rem', fontWeight: 1000, color: '#fff', marginTop: 4 }}>SERİ DİZ</span>
            </button>
-           <button onClick={onSortDoubles} className="glass-panel" style={{ width: '4rem', height: '3.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <LayoutGrid size={16} color="var(--accent-gold)" />
-              <span style={{ fontSize: '0.45rem', fontWeight: 950, color: '#fff', marginTop: 4 }}>ÇİFT DİZ</span>
+           <button onClick={onSortDoubles} className="glass-panel" style={{ width: '3.8rem', height: '3.8rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <LayoutGrid size={20} color="var(--accent-gold)" />
+              <span style={{ fontSize: '0.45rem', fontWeight: 1000, color: '#fff', marginTop: 4 }}>ÇİFT DİZ</span>
            </button>
         </div>
 
-        {/* MERKEZ (TAŞLAR) */}
+        {/* TAŞ ALANI (PHYSICAL GRID) */}
         <div style={{
           flex: 1, display: 'grid', height: '100%',
           gridTemplateColumns: 'repeat(15, 1fr)', gridTemplateRows: 'repeat(2, 1fr)',
-          gap: 6, position: 'relative', zIndex: 1,
-          padding: '10px 0'
+          gap: '0.4rem', position: 'relative', zIndex: 2
         }}>
           {hand.map((tile, idx) => (
             <div
               key={`slot-${idx}`}
+              className="rack-slot"
               style={{
-                background: 'rgba(0,0,0,0.5)', borderRadius: 8,
-                position: 'relative', display: 'flex', alignItems: 'stretch', justifyContent: 'stretch',
-                boxShadow: 'inset 0 4px 10px rgba(0,0,0,0.8)',
-                border: '1px solid rgba(255,255,255,0.02)'
+                borderRadius: '0.6rem', position: 'relative', 
+                background: 'rgba(0,0,0,0.6)', boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.8)'
               }}
             >
               {tile && (
@@ -208,32 +167,25 @@ const RackComponent = ({
           ))}
         </div>
 
-        {/* SAĞ FLANK (AKSİYON BUTONU) */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {/* SAĞ ANA AKSİYON (OPEN BUTTON) */}
+        <div style={{ zIndex: 2 }}>
            <button 
              disabled={!canOpenSeries && !canOpenDoubles}
              onClick={() => canOpenDoubles ? onOpenDoubles() : onOpenSeries()}
+             className={(canOpenSeries || canOpenDoubles) ? 'btn-premium' : ''}
              style={{ 
-                width: '6rem', height: '6rem', borderRadius: '1.2rem',
-                background: (canOpenSeries || canOpenDoubles) ? 'linear-gradient(180deg, #ffcc00 0%, #ff9500 100%)' : 'rgba(0,0,0,0.5)',
-                border: '2px solid rgba(255,255,255,0.2)',
+                width: '7.5rem', height: '7.5rem', borderRadius: '1.8rem',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                cursor: (canOpenSeries || canOpenDoubles) ? 'pointer' : 'default',
-                boxShadow: (canOpenSeries || canOpenDoubles) ? '0 10px 25px rgba(255, 204, 0, 0.4)' : 'none',
-                opacity: (canOpenSeries || canOpenDoubles) ? 1 : 0.3,
-                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)'
+                background: (canOpenSeries || canOpenDoubles) ? '' : 'rgba(255,255,255,0.03)',
+                border: (canOpenSeries || canOpenDoubles) ? 'none' : '2px dashed rgba(255,255,255,0.1)',
+                opacity: (canOpenSeries || canOpenDoubles) ? 1 : 0.3
              }}
            >
-              <Unlock size={28} color="#000" />
-              <span style={{ fontSize: '0.8rem', fontWeight: 1000, color: '#000', marginTop: 4 }}>AÇ</span>
+              <Unlock size={36} color={(canOpenSeries || canOpenDoubles) ? '#000' : '#fff'} />
+              <span style={{ fontSize: '1rem', fontWeight: 1000, color: (canOpenSeries || canOpenDoubles) ? '#000' : '#fff', marginTop: 6, letterSpacing: 1 }}>AÇ</span>
            </button>
         </div>
-        
-        {/* Ortasındaki Ayırıcı Çizgi */}
-        <div style={{ 
-          position: 'absolute', top: '50%', left: 20, right: 20, height: 1, 
-          background: 'rgba(255,255,255,0.05)', translate: '0 -50%', pointerEvents: 'none' 
-        }} />
+
       </div>
     </div>
   );

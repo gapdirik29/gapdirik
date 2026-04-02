@@ -37,193 +37,107 @@ export function PlayerSeat({ player, position, isCurrentTurn, playerDiscards, on
     }
   }, [player, isCurrentTurn]);
 
-  const getContainerStyle = (): React.CSSProperties => {
-    return {
-      position: 'relative', 
-      zIndex: 10, 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center', 
-      gap: '0.4rem',
-      padding: '0.5rem',
-      width: 'max-content'
-    };
-  };
-
-  const getDiscardStyle = (): React.CSSProperties => {
-    const base: React.CSSProperties = { 
-        position: 'absolute', zIndex: 5, pointerEvents: 'none',
-        transform: 'scale(0.85)' /* Kompaktlık için %85 ölçek */
-    };
-    switch(position) {
-      case 'top': return { ...base, top: '7rem', left: '50%', transform: 'translateX(-50%) scale(0.85)' };
-      case 'bottom': return { ...base, bottom: '6.5rem', left: '50%', transform: 'translateX(-50%) scale(0.85)' };
-      case 'left': return { ...base, top: '50%', left: '7rem', transform: 'translateY(-50%) scale(0.85)' };
-      case 'right': return { ...base, top: '50%', right: '7rem', transform: 'translateY(-50%) scale(0.85)' };
-      default: return base;
-    }
-  };
-
   if (!player) return null;
 
   const lastDiscard = playerDiscards.length > 0 ? playerDiscards[playerDiscards.length - 1] : null;
 
   return (
-    <>
-      <div style={getContainerStyle()}>
-        <div style={{ position: 'relative' }}>
-          <motion.div
-            onClick={() => onSendGift && !player.isBot && setShowGiftMenu(!showGiftMenu)}
-            animate={isCurrentTurn ? { boxShadow: ['0 0 0rem var(--accent-gold-glow)', '0 0 2rem var(--accent-gold-glow)', '0 0 0rem var(--accent-gold-glow)'] } : {}}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            style={{
-              width: '4rem', height: '4rem', borderRadius: '1.2rem',
-              padding: '0.15rem', background: isCurrentTurn ? 'var(--accent-gold)' : 'var(--glass-border)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-              zIndex: 10, position: 'relative'
-            }}
-          >
-            <div style={{ width: '100%', height: '100%', borderRadius: '1rem', background: '#12161b', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative', overflow: 'hidden' }}>
-              {isTalking && <motion.div animate={{ opacity: [0, 1, 0] }} transition={{ repeat: Infinity }} style={{ position: 'absolute', inset: 0, background: 'rgba(76, 209, 55, 0.2)' }} />}
-              <User size={30} color={isCurrentTurn ? 'var(--accent-gold)' : 'rgba(255,255,255,0.4)'} />
-              
-              <div style={{ position: 'absolute', top: '0.3rem', right: '0.3rem', background: 'var(--accent-gold)', borderRadius: '0.3rem', width: '0.9rem', height: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 0.1rem 0.3rem rgba(0,0,0,0.5)' }}>
-                <Star size={10} color="#000" fill="#000" />
-              </div>
-            </div>
-
-            {/* TAŞ SAYISI ROZETİ (Overlap Fix) */}
-            <div style={{
-              position: 'absolute', bottom: '-0.4rem', right: '-0.4rem',
-              background: 'linear-gradient(135deg, #1e272e 0%, #000 100%)', border: `1px solid ${isCurrentTurn ? 'var(--accent-gold)' : 'var(--glass-border)'}`,
-              borderRadius: '0.6rem', padding: '0.2rem 0.5rem', fontSize: '0.6rem', fontWeight: 950, color: 'var(--accent-gold)',
-              boxShadow: '0 0.3rem 0.6rem rgba(0,0,0,0.6)', whiteSpace: 'nowrap', zIndex: 20
-            }}>
-              {player.tileCount} T
-            </div>
-          </motion.div>
-
-          <div style={{ marginTop: '0.6rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem' }}>
-            {/* VIP İSİMLİK (NAMEPLATE) */}
-            <div style={{ 
-              background: 'rgba(0,0,0,0.6)', padding: '0.2rem 0.8rem', borderRadius: '0.5rem', 
-              border: '1px solid rgba(255,255,255,0.1)', minWidth: '4.5rem', textAlign: 'center',
-              boxShadow: '0 0.2rem 0.5rem rgba(0,0,0,0.3)'
-            }}>
-              <div style={{ fontSize: '0.65rem', fontWeight: 950, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.5, maxWidth: '4.5rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {player.name}
-              </div>
-            </div>
-            
-            {/* ALTIN BAKİYE KUTUSU (GOLDEN CHIP BOX) */}
-            <div style={{ 
-              background: 'linear-gradient(180deg, #ffcc00 0%, #ff9500 100%)', 
-              padding: '0.15rem 0.5rem', borderRadius: '0.4rem', 
-              border: '1px solid rgba(0,0,0,0.1)', minWidth: '4rem', textAlign: 'center',
-              boxShadow: '0 0.2rem 0.4rem rgba(0,0,0,0.2)'
-            }}>
-              <div style={{ fontSize: '0.6rem', fontWeight: 950, color: '#000', letterSpacing: -0.2 }}>
-                {player.chips.toLocaleString()} ₺
-              </div>
-            </div>
-          </div>
-
-          <AnimatePresence>
-            {showGiftMenu && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8, x: -60 }} animate={{ opacity: 1, scale: 1, x: -85 }} exit={{ opacity: 0, scale: 0.8 }}
-                className="glass-panel"
-                style={{ position: 'absolute', left: 0, top: -10, padding: '0.8rem', display: 'flex', gap: '0.6rem', zIndex: 100 }}
-              >
-                {GIFTS.map(g => (
-                  <button key={g.id} onClick={(e) => { e.stopPropagation(); onSendGift?.(player.id, g.id); setShowGiftMenu(false); }} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: '0.6rem', fontSize: '1.2rem', padding: '0.4rem', cursor: 'pointer' }}>
-                    {g.icon}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
+    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem' }}>
+      
+      {/* 1. ÜST BİLGİ (KOLTUK NO / DURUM) */}
+      <AnimatePresence>
         {isCurrentTurn && (
           <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            style={{ color: '#4cd137', fontSize: '0.5rem', fontWeight: 950, letterSpacing: 1.5, textShadow: '0 0 0.5rem rgba(76, 209, 55, 0.6)', marginTop: '0.2rem' }}
+            initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: -18 }}
+            style={{ position: 'absolute', top: 0, color: 'var(--accent-gold)', fontSize: '0.55rem', fontWeight: 1000, letterSpacing: 2, textShadow: '0 0 10px rgba(255,204,0,0.5)' }}
           >
-            DÜŞÜNÜYOR
-          </motion.div>
-        )}
-      </div>
-
-      {/* KONUŞMA BALONCUĞU (Speech Bubble) */}
-      <AnimatePresence>
-        {lastMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: 10, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.5 }}
-            style={{
-              position: 'fixed', zIndex: 1000, 
-              ...((() => {
-                const box: React.CSSProperties = { transform: 'translateX(-50%)' };
-                switch(position) {
-                  case 'top': return { ...box, top: 'calc(100px + var(--safe-top))', left: '60px' };
-                  case 'bottom': return { ...box, bottom: 'calc(210px + var(--safe-bottom))', right: '40px' };
-                  case 'left': return { ...box, top: '50%', left: '110px', transform: 'translateY(-100%)' };
-                  case 'right': return { ...box, top: '50%', right: '110px', transform: 'translateY(-100%)' };
-                  default: return box;
-                }
-              })())
-            }}
-          >
-            <div className="glass-panel" style={{
-              padding: '10px 18px', borderRadius: '15px 15px 15px 4px',
-              border: '1.5px solid rgba(255, 215, 0, 0.4)', background: 'rgba(10, 20, 25, 0.95)',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.8)', color: '#fff', fontSize: 13, 
-              fontWeight: 800, minWidth: 100, maxWidth: 180, textAlign: 'center', lineHeight: 1.4,
-              position: 'relative'
-            }}>
-              {lastMessage}
-              {/* Baloncuk Oku */}
-              <div style={{
-                position: 'absolute', bottom: -8, left: 10, width: 0, height: 0,
-                borderLeft: '8px solid transparent', borderRight: '8px solid transparent',
-                borderTop: '8px solid rgba(255, 215, 0, 0.4)'
-              }} />
-            </div>
+            SIRADA
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div style={getDiscardStyle()}>
+      {/* 2. ANA OYUNCU KARTI (ULTRA GLASS) */}
+      <div className="glass-panel" style={{ 
+        padding: '0.4rem', borderRadius: '1.5rem', 
+        border: isCurrentTurn ? '2px solid var(--accent-gold)' : '1px solid rgba(255,255,255,0.1)',
+        boxShadow: isCurrentTurn ? '0 0 20px rgba(255,204,0,0.2)' : '0 10px 20px rgba(0,0,0,0.4)',
+        background: isCurrentTurn ? 'rgba(255,204,0,0.05)' : 'rgba(0,0,0,0.4)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.3rem',
+        minWidth: '5.5rem'
+      }}>
+        
+        {/* AVATAR DERYASI */}
+        <div style={{ position: 'relative', width: '3.8rem', height: '3.8rem' }}>
+           <div style={{ 
+             width: '100%', height: '100%', borderRadius: '1.2rem', 
+             background: 'linear-gradient(135deg, #0f2027 0%, #203a43 100%)', 
+             display: 'flex', alignItems: 'center', justifyContent: 'center',
+             border: '1px solid rgba(255,255,255,0.05)', overflow: 'hidden'
+           }}>
+              <User size={32} color={isCurrentTurn ? 'var(--accent-gold)' : 'rgba(255,255,255,0.3)'} />
+              {isTalking && <motion.div animate={{ opacity: [0, 0.4, 0] }} transition={{ repeat: Infinity }} style={{ position: 'absolute', inset: 0, background: '#4cd137' }} />}
+           </div>
+           
+           {/* VIP LOGO */}
+           <div style={{ position: 'absolute', top: '-0.3rem', right: '-0.3rem', background: 'var(--accent-gold)', borderRadius: '50%', width: '1.1rem', height: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 5px rgba(0,0,0,0.5)' }}>
+             <Star size={10} color="#000" fill="#000" />
+           </div>
+
+           {/* TAŞ SAYISI (FLOATING BADGE) */}
+           <div style={{
+              position: 'absolute', bottom: '-0.3rem', left: '50%', transform: 'translateX(-50%)',
+              background: '#000', border: '1px solid var(--accent-gold)',
+              borderRadius: '0.6rem', padding: '0.1rem 0.5rem', fontSize: '0.6rem', fontWeight: 1000, color: 'var(--accent-gold)',
+              whiteSpace: 'nowrap'
+           }}>
+              {player.tileCount} TAŞ
+           </div>
+        </div>
+
+        {/* İSİM VE BAKİYE */}
+        <div style={{ textAlign: 'center', marginTop: '0.3rem' }}>
+           <div style={{ fontSize: '0.65rem', fontWeight: 950, color: '#fff', textTransform: 'uppercase', letterSpacing: 0.5, maxWidth: '5rem', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {player.name}
+           </div>
+           <div style={{ color: 'var(--accent-gold)', fontSize: '0.7rem', fontWeight: 1000, marginTop: '0.1rem' }}>
+              {player.chips.toLocaleString()} ₺
+           </div>
+        </div>
+      </div>
+
+      {/* DISCARDS (ELITE PRO MINI DISPLAY) */}
+      <div style={{
+          position: 'absolute', 
+          ...(position === 'top' ? { top: '8.5rem' } : position === 'bottom' ? { bottom: '7.5rem' } : position === 'left' ? { left: '7.5rem' } : { right: '7.5rem' }),
+          zIndex: 5, transform: 'scale(0.8)'
+      }}>
           <AnimatePresence mode="wait">
             {lastDiscard ? (
-                <motion.div
-                  key={lastDiscard.id}
-                  initial={{ scale: 0.4, opacity: 0, rotate: -10 }}
-                  animate={{ scale: 0.85, opacity: 1, rotate: 0 }}
-                  exit={{ scale: 0.4, opacity: 0 }}
-                  className="tile-wrapper shadow-none"
-                >
+                <motion.div key={lastDiscard.id} initial={{ scale: 0.2, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
                    <Tile {...lastDiscard} />
                 </motion.div>
             ) : (
-                <div style={{ width: 42, height: 58, border: '1.5px dashed rgba(255,255,255,0.06)', borderRadius: 10 }} />
+                <div style={{ width: 40, height: 55, border: '1.5px dashed rgba(255,255,255,0.06)', borderRadius: 10 }} />
             )}
           </AnimatePresence>
       </div>
 
-      <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 2000 }}>
-         {activeGifts.map(gift => (
-            <motion.div
-              key={gift.id}
-              initial={{ scale: 0, opacity: 0, y: 100 }} animate={{ scale: [0, 2.5, 1], opacity: [0, 1, 1], y: 0 }} exit={{ opacity: 0, scale: 2, transition: { duration: 0.8 } }}
-              style={{ position: 'absolute', left: '50%', top: '40%', transform: 'translate(-50%, -50%)', fontSize: 80, filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.5))' }}
-            >
-              {GIFTS.find(g => g.id === gift.type)?.icon || '🎁'}
-            </motion.div>
-         ))}
-      </div>
-    </>
+      {/* KONUŞMA BALONU (MINIMALIST ROYAL) */}
+      <AnimatePresence>
+        {lastMessage && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }}
+            className="glass-panel"
+            style={{ 
+              position: 'absolute', left: '110%', top: '10%', padding: '0.6rem 1rem', 
+              minWidth: '6rem', color: '#fff', fontSize: '0.7rem', fontWeight: 800,
+              zIndex: 1000, borderLeft: '3px solid var(--accent-gold)'
+            }}
+          >
+            {lastMessage}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

@@ -1,52 +1,99 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap');
 
 :root {
-  --bg-main: #072a1f; /* Koyu Casino Yeşili */
-  --accent-gold: #ffcc00; /* Parlak Hükümdar Altını */
-  --glass-bg: rgba(0, 0, 0, 0.25);
-  --glass-border: rgba(255, 255, 255, 0.1);
+  --bg-main: #01120d; /* Daha Derin Gece Yeşili */
+  --accent-gold: #ffcc00;
+  --glass-bg: rgba(0, 0, 0, 0.45);
+  --glass-border: rgba(255, 215, 0, 0.2); 
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* KESİN ÖLÇEKLENDİRME - MÜHÜRLENDİ */
 html {
-  font-size: 1.25vmax; /* Görseldeki %100 oranına çivilendi */
+  font-size: 1.25vmax;
 }
 
 body, #root {
   margin: 0; padding: 0;
   width: 100vw; height: 100vh;
   background: var(--bg-main);
-  background-image: 
-    radial-gradient(circle at center, rgba(34, 139, 34, 0.4) 0%, transparent 80%),
-    url('https://www.transparenttextures.com/patterns/felt.png'); /* Yeşil Çuha Dokusu */
   overflow: hidden;
   font-family: 'Outfit', sans-serif;
   color: white;
 }
 
-/* OYUN DÜZENİ (TRUE GRID) */
 .game-layout {
   display: grid;
   width: 100vw; height: 100vh;
   position: relative;
-  box-shadow: inset 0 0 15rem rgba(0,0,0,0.8); /* Daha Derin Masa Kenarı */
+  box-shadow: inset 0 0 20rem rgba(0,0,0,0.9);
 }
 
-/* MASA ÇUKURU (TABLE PIT EFFECT) */
-.center-board-area::before {
+/* PREMIUM GLASS PANEL SİLSİLESİ */
+.glass-panel {
+  background: rgba(10, 25, 20, 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1.5px solid var(--glass-border);
+  border-radius: 1.2rem;
+  box-shadow: 
+    0 10px 30px rgba(0,0,0,0.5),
+    inset 0 0 10px rgba(255,215,0,0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel:hover {
+  border-color: rgba(255, 215, 0, 0.4);
+  background: rgba(15, 35, 30, 0.82);
+  transform: translateY(-2px);
+}
+
+/* BUTONLAR (ROYAL GOLD) */
+.btn-premium {
+  background: linear-gradient(135deg, #ffd700 0%, #b8860b 100%);
+  color: #000; 
+  font-weight: 1000;
+  padding: 0.8rem 1.8rem; 
+  border-radius: 1.2rem; 
+  border: none;
+  text-transform: uppercase; 
+  font-size: 0.7rem;
+  letter-spacing: 1.5px;
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.35);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-premium::after {
   content: '';
   position: absolute;
-  inset: 5rem;
-  background: rgba(0,0,0,0.1);
-  border-radius: 4rem;
-  box-shadow: inset 0 0 5rem rgba(0,0,0,0.5);
-  pointer-events: none;
-  z-index: 0;
+  top: -50%; left: -50%; width: 200%; height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255,255,255,0.4), transparent);
+  transform: rotate(45deg);
+  transition: 0.5s;
 }
 
-/* LANDSCAPE (YATAY) - TAM ERGONOMİ MÜHÜRLENDİ */
+.btn-premium:hover::after {
+  left: 100%;
+}
+
+/* ISTAKA VE TAŞLAR İÇİN PREMIUM YANSIMALAR */
+.rack-slot {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.3);
+}
+
+.tile-container {
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.tile-container:hover {
+  transform: scale(1.05) translateY(-5px);
+  z-index: 10;
+}
+
 @media screen and (orientation: landscape) {
   .game-layout {
     grid-template-areas: 
@@ -57,59 +104,4 @@ body, #root {
     grid-template-rows: 3.8rem 1fr auto;
     padding: var(--safe-top) 0rem var(--safe-bottom) 0rem;
   }
-}
-
-/* PORTRAIT (DİKEY) - COMPACT STACKING */
-@media screen and (orientation: portrait) {
-  .game-layout {
-    grid-template-areas: 
-      "header"
-      "center"
-      "players"
-      "footer";
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr auto auto;
-    padding: var(--safe-top) 0 var(--safe-bottom) 0;
-  }
-}
-
-.header-stats {
-  grid-area: header;
-  display: flex; align-items: center; justify-content: space-between;
-}
-
-.center-board-area {
-  grid-area: center;
-  position: relative;
-  display: flex; align-items: center; justify-content: center;
-}
-
-.rack-footer {
-  grid-area: footer;
-  display: flex; justify-content: center; align-items: flex-end;
-  min-height: 10rem;
-}
-
-/* ELEMENT GÖRÜNÜMLERİ */
-.glass-panel {
-  background: var(--glass-bg);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
-  border: 1px solid var(--glass-border);
-  border-radius: 1.2rem;
-  box-shadow: 0 0.8rem 2rem rgba(0,0,0,0.4);
-}
-
-.btn-premium {
-  background: linear-gradient(180deg, #ffcc00 0%, #ff9500 100%);
-  color: #000; font-weight: 950;
-  padding: 0.8rem 1.8rem; border-radius: 2rem; border: 1.5px solid rgba(255,255,255,0.2);
-  text-transform: uppercase; font-size: 0.75rem;
-  box-shadow: 0 0.5rem 1rem rgba(255, 204, 0, 0.3);
-  cursor: pointer;
-}
-
-/* OYUNCU KOLTUĞU (GRID İÇİNDE FLEX) */
-.seat-container {
-  display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
 }

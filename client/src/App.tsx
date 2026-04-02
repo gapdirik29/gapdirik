@@ -14,7 +14,7 @@ import { Lobby } from './components/Lobby';
 import { useSocket } from './context/SocketContext';
 import { soundManager } from './utils/soundManager';
 import { Store } from './components/Store';
-import { CheckCircle, ArrowRight, Loader2, User } from 'lucide-react';
+import { CheckCircle, ArrowRight, Loader2, User, LayoutDashboard, Settings, MessageSquare } from 'lucide-react';
 
 const APP_VERSION = 'v3.2.0 "HÜKÜMDAR PRIME"';
 
@@ -70,8 +70,6 @@ const PaymentSuccessScreen = ({ onLobbyReturn, onUpdateUser }: { onLobbyReturn: 
 
 export default function App() {
   const { socket, playerName, setPlayerName } = useSocket();
-  
-  // 1. TÜM KANCALAR (EN TEPEDE - FIXED ORDER)
   const [screen, setScreen] = useState<'login' | 'lobby' | 'game' | 'result' | 'payment-success'>('login');
   const [user, setUser] = useState<any>(null);
   const [roomId, setRoomId] = useState<string>('');
@@ -88,14 +86,11 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [isStoreOpen, setIsStoreOpen] = useState(false);
   const [isAdLoading, setIsAdLoading] = useState(false);
-  const [theme] = useState<'default' | 'casino' | 'night' | 'gold'>('default');
-  const [tileSkin] = useState<'default' | 'gold' | 'neon' | 'marble'>('default');
   const [tookDiscard] = useState(false);
   const [gameOverData, setGameOverData] = useState<any>(null);
   const [activeGifts] = useState<any[]>([]);
   const [isScoreOpen, setIsScoreOpen] = useState(false);
 
-  // 2. SOCKET DINLEYICILERI
   useEffect(() => {
     if (!socket) return;
     const handlers = {
@@ -151,9 +146,8 @@ export default function App() {
     );
   }, [gameState.players, socket?.id, chatMessages, allDiscards, activeGifts, roomId, socket]);
 
-  // 5. TEK DÖNÜŞ (GÖRSELDEKİ SABİT YERLEŞİM)
   return (
-    <div className={`theme-${theme} game-layout`}>
+    <div className="game-layout">
       
       <AnimatePresence mode="wait">
         {screen === 'login' && (
@@ -177,63 +171,59 @@ export default function App() {
       {(screen === 'game' || screen === 'result') && (
         <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', position: 'relative' }}>
           
-          {/* 1. ÜST PANEL (TOP BAR - ROYAL STYLE) */}
+          {/* 1. ROYAL HEADER HUD */}
           <header style={{ 
-            height: '3.8rem', background: 'rgba(0,0,0,0.85)', 
-            borderBottom: '2px solid var(--accent-gold)', 
+            height: '3.8rem', background: 'rgba(5, 12, 10, 0.85)', 
+            borderBottom: '2.5rem solid transparent', /* Shadow yer açma */
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '0 1.5rem', zIndex: 2000, boxShadow: '0 5px 15px rgba(0,0,0,0.5)'
+            padding: '0 1.5rem', zIndex: 2500, position: 'fixed', top: 0, left: 0, right: 0,
+            backdropFilter: 'blur(20px)'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem' }}>
-               <div style={{ width: '2.8rem', height: '2.8rem', borderRadius: '0.8rem', background: '#2c3e50', border: '1px solid var(--accent-gold)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <User size={26} color="var(--accent-gold)" />
+            {/* Header Content Overlay (Avoid background border flex issue) */}
+            <div style={{ width: '100%', height: '3.8rem', position: 'absolute', top: 0, left: 0, borderBottom: '2px solid var(--accent-gold)', boxShadow: '0 10px 40px rgba(0,0,0,0.8)' }} />
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.2rem', zIndex: 3 }}>
+               <div className="glass-panel" style={{ width: '3rem', height: '3rem', borderRadius: '1rem', background: '#0a1410', display: 'flex', alignItems: 'center', justifyContent: 'center', borderColor: 'var(--accent-gold)' }}>
+                  <User size={30} color="var(--accent-gold)" />
                </div>
-               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 950, color: '#fff', letterSpacing: 0.5 }}>{playerName?.toUpperCase()}</span>
-                  <div style={{ background: '#000', padding: '0.2rem 0.6rem', borderRadius: '0.4rem', border: '1px solid rgba(255,204,0,0.4)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                     <span style={{ color: 'var(--accent-gold)', fontSize: '0.7rem', fontWeight: 950 }}>{user?.chips.toLocaleString() || '0'} $</span>
+               <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 1000, color: '#fff', letterSpacing: 1 }}>{playerName?.toUpperCase()}</span>
+                  <div className="glass-panel" style={{ padding: '0.2rem 0.6rem', transform: 'scale(0.9) translateX(-5%)', background: '#000', borderColor: 'rgba(255,204,0,0.3)', display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                     <span style={{ color: 'var(--accent-gold)', fontSize: '0.75rem', fontWeight: 1000 }}>{user?.chips.toLocaleString() || '0'} $</span>
                      <div style={{ width: 14, height: 14, background: 'var(--accent-gold)', borderRadius: '50%', color: '#000', fontSize: 9, textAlign: 'center', lineHeight: '14px', fontWeight: 1000, cursor: 'pointer' }}>+</div>
                   </div>
                </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-               <button onClick={() => setIsScoreOpen(!isScoreOpen)} className="glass-panel" style={{ padding: '0.4rem 0.8rem', border: '1px solid var(--accent-gold)', background: isScoreOpen ? 'var(--accent-gold)' : 'rgba(255,204,0,0.1)', color: isScoreOpen ? '#000' : 'var(--accent-gold)', fontSize: '0.65rem', fontWeight: 950, borderRadius: '0.5rem' }}>YAZBOZ</button>
-               <button onClick={() => setIsStoreOpen(true)} className="glass-panel" style={{ padding: '0.4rem 0.8rem', border: '1px solid var(--accent-gold)', background: 'rgba(255,204,0,0.1)', color: 'var(--accent-gold)', fontSize: '0.65rem', fontWeight: 950, borderRadius: '0.5rem' }}>ÇİPSATINAL</button>
-               <button className="glass-panel" style={{ width: '2.2rem', height: '2.2rem', border: 'none', background: 'transparent', fontSize: '1.2rem' }}>⚙️</button>
-               <button className="glass-panel" style={{ width: '2.2rem', height: '2.2rem', border: 'none', background: 'transparent', fontSize: '1.2rem' }}>✉️</button>
-               <button onClick={() => setScreen('lobby')} className="btn-premium" style={{ height: '2.4rem', padding: '0 1.2rem', fontSize: '0.7rem', background: 'rgba(255,0,0,0.15)', color: '#ff4747', border: '1.2px solid rgba(255,0,0,0.3)' }}>KALK</button>
+            <div style={{ display: 'flex', gap: '1.2rem', alignItems: 'center', zIndex: 3 }}>
+               <button onClick={() => setIsScoreOpen(!isScoreOpen)} className="glass-panel" style={{ padding: '0.5rem 1rem', background: isScoreOpen ? 'var(--accent-gold)' : 'rgba(255,215,0,0.1)', color: isScoreOpen ? '#000' : 'var(--accent-gold)', fontSize: '0.7rem', fontWeight: 1000 }}>YAZBOZ</button>
+               <button onClick={() => setIsStoreOpen(true)} className="btn-premium" style={{ height: '2.5rem', padding: '0 1.2rem' }}>MAĞAZA</button>
+               <button className="glass-panel" style={{ width: '2.5rem', height: '2.5rem', border: 'none', background: 'transparent' }}><Settings size={22} color="#fff" /></button>
+               <button onClick={() => setScreen('lobby')} className="glass-panel" style={{ padding: '0.5rem 1rem', background: 'rgba(255,0,0,0.1)', borderColor: 'rgba(255,0,0,0.3)', color: '#ff4747', fontSize: '0.7rem', fontWeight: 1000 }}>KALK</button>
             </div>
           </header>
 
-          <main style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-            {/* LOBY / SALONLAR BUTONU (SOL YAN) */}
-            <div style={{ position: 'absolute', top: '1.5rem', left: '1.5rem', zIndex: 1000 }}>
-               <button className="glass-panel" style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.65rem', fontWeight: 950, padding: '0.6rem 1.2rem', borderRadius: '0.8rem' }}>
-                  ⋮≡ SALONLAR
+          <main style={{ flex: 1, position: 'relative', marginTop: '3.8rem' }}>
+            {/* LOBY / SALONLAR BUTTONS (FLOATING GLASS) */}
+            <div style={{ position: 'absolute', top: '1.5rem', left: '1.5rem', zIndex: 2000, display: 'flex', flexLines: 'column', gap: '1rem' }}>
+               <button className="glass-panel" style={{ padding: '0.8rem 1.4rem', color: '#fff', fontSize: '0.7rem', fontWeight: 1000, display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <LayoutDashboard size={18} /> SALONLAR
                </button>
             </div>
 
-            {/* ARKADAŞLAR BUTONU (SAĞ YAN) */}
-            <div style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', zIndex: 1000 }}>
-               <button className="glass-panel" style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,255,255,0.1)', color: '#fff', fontSize: '0.65rem', fontWeight: 950, padding: '0.6rem 1.2rem', borderRadius: '0.8rem' }}>
-                  👥 ARKADAŞLAR
+            <div style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', zIndex: 2000 }}>
+               <button className="glass-panel" style={{ padding: '0.8rem 1.4rem', color: '#fff', fontSize: '0.7rem', fontWeight: 1000, display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <MessageSquare size={18} /> SOHBET
                </button>
             </div>
 
-            {/* MASADAKİ DİĞER OYUNCULAR (ELITE DIAMOND POSITIONS) */}
-            <div style={{ position: 'absolute', top: '2rem', left: '50%', transform: 'translateX(-50%)', zIndex: 1000 }}>
-               {getSeat('top')}
-            </div>
-            <div style={{ position: 'absolute', left: '2rem', top: '48%', transform: 'translateY(-50%)', zIndex: 1000 }}>
-               {getSeat('left')}
-            </div>
-            <div style={{ position: 'absolute', right: '2rem', top: '48%', transform: 'translateY(-50%)', zIndex: 1000 }}>
-               {getSeat('right')}
-            </div>
+            {/* SEATS (ELITE DIAMOND POSITIONS) */}
+            <div style={{ position: 'absolute', top: '5%', left: '50%', transform: 'translateX(-50%)', zIndex: 2000 }}>{getSeat('top')}</div>
+            <div style={{ position: 'absolute', left: '3rem', top: '40%', transform: 'translateY(-50%)', zIndex: 2000 }}>{getSeat('left')}</div>
+            <div style={{ position: 'absolute', right: '3rem', top: '40%', transform: 'translateY(-50%)', zIndex: 2000 }}>{getSeat('right')}</div>
 
-            {/* OYUN MERKEZİ (ELITE PRO 3D ENGINE) */}
-            <div style={{ width: '100%', height: '100%' }}>
+            {/* 3D ENGINE (THE MASTERPIECE) */}
+            <div style={{ position: 'absolute', inset: 0, zIndex: 1000 }}>
                <GameEngine 
                  hand={hand.filter(Boolean) as TileData[]}
                  indicator={gameState.indicator}
@@ -250,69 +240,49 @@ export default function App() {
                />
             </div>
 
-            {/* YAZBOZ BOARD (SLIDE-OUT) */}
+            {/* SLIDE-OUT SCOREBOARD */}
             <AnimatePresence>
                {isScoreOpen && (
                  <motion.div
                    initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
                    transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                   className="glass-panel"
-                   style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: '22rem', padding: '2rem', zIndex: 5000, borderLeft: '3px solid var(--accent-gold)', borderRadius: '2rem 0 0 2rem', background: 'rgba(5, 15, 20, 0.98)' }}
+                   style={{ position: 'absolute', right: 0, top: 0, bottom: 0, zIndex: 5000 }}
                  >
-                    <div style={{ height: '100%', overflowY: 'auto' }}>
-                       <ScoreBoard indicator={gameState.indicator} highestSeriesValue={gameState.highestSeriesValue} highestDoublesValue={gameState.highestDoublesValue} players={gameState.players} roundNumber={gameState.roundNumber} />
-                    </div>
-                    <button onClick={() => setIsScoreOpen(false)} style={{ position: 'absolute', top: '1rem', left: '-1rem', width: '2rem', height: '2rem', borderRadius: '50%', background: 'var(--accent-gold)', border: 'none', fontWeight: 1000, cursor: 'pointer', boxShadow: '0 0.2rem 0.5rem rgba(0,0,0,0.5)' }}>×</button>
+                    <ScoreBoard indicator={gameState.indicator} highestSeriesValue={gameState.highestSeriesValue} highestDoublesValue={gameState.highestDoublesValue} players={gameState.players} roundNumber={gameState.roundNumber} />
                  </motion.div>
                )}
             </AnimatePresence>
           </main>
 
-          {/* ALT PANEL (ISTAKA + DURUM) */}
-          <footer style={{ 
-            width: '100%', paddingBottom: 'var(--safe-bottom)', zIndex: 1500, position: 'relative'
-          }}>
-             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
-                {/* DURUM BİLGİSİ (BARAJ/ELİM) - SOL ALTTA ISTAKA ÜSTÜNDE */}
-                <div style={{ alignSelf: 'flex-start', marginLeft: '2rem', marginBottom: '0.5rem', display: 'flex', gap: '0.8rem' }}>
-                   <div className="glass-panel" style={{ padding: '0.4rem 1rem', fontSize: '0.7rem', fontWeight: 950, color: 'var(--accent-gold)', background: 'rgba(0,0,0,0.5)' }}>
-                      BARAJ: {gameState.highestSeriesValue}
-                   </div>
-                   <div className="glass-panel" style={{ padding: '0.4rem 1rem', fontSize: '0.7rem', fontWeight: 950, color: '#fff', background: 'rgba(0,0,0,0.5)' }}>
-                      ELİM: {hS.total}
-                   </div>
-                </div>
-
-                {/* ALT OYUNCU (SİZ) */}
-                <div style={{ marginBottom: '-1.5rem', zIndex: 1600 }}>{getSeat('bottom')}</div>
-                
-                {/* ISTAKA */}
-                <Rack hand={hand} selectedId={selectedId} onSelectTile={setSelectedId} onDoubleClickTile={(tId) => { if (gameState.currentTurn === socket?.id && hasDrawn) { socket?.emit('discard_tile', { roomId, tileId: tId }); setHand(prev => prev.map(t => t?.id === tId ? null : t)); setHasDrawn(false); } }} onMoveToSlot={(tId, targetIdx) => setHand(prev => { const s = prev.findIndex(t => t?.id === tId); if (s===-1) return prev; const n = [...prev]; const m = n[s]! ; n[s] = n[targetIdx]; n[targetIdx] = m; return n; })} seriesPoints={hS.total} doublesPoints={dblS.total} handCount={hand.filter(Boolean).length} appendableTiles={[]} minMeldToOpen={gameState.highestSeriesValue} colorMult={getColorMultiplier(gameState.indicator)} canOpenSeries={gameState.currentTurn === socket?.id && hasDrawn && hS.total >= gameState.highestSeriesValue} canOpenDoubles={gameState.currentTurn === socket?.id && hasDrawn && (dblS.pairs.length >= 5 || dblS.total >= gameState.highestDoublesValue)} canPutBack={tookDiscard} onPutBack={()=>{}} onOpenSeries={() => socket?.emit('open_series', { roomId, melds: hS.melds })} onOpenDoubles={() => socket?.emit('open_doubles', { roomId, pairs: dblS.pairs })} onAppends={()=>{}} onSortDoubles={()=>{}} onSortSeries={()=>{}} tileSkin={tileSkin} highestSeriesValue={gameState.highestSeriesValue} highestDoublesValue={gameState.highestDoublesValue} tournamentScores={gameState.tournamentScores} />
-             </div>
+          {/* RACK FOOTER (AUTO OVERLAP) */}
+          <footer style={{ position: 'relative', zIndex: 3000 }}>
+             <Rack hand={hand} selectedId={selectedId} onSelectTile={setSelectedId} onDoubleClickTile={(tId) => { if (gameState.currentTurn === socket?.id && hasDrawn) { socket?.emit('discard_tile', { roomId, tileId: tId }); setHand(prev => prev.map(t => t?.id === tId ? null : t)); setHasDrawn(false); } }} onMoveToSlot={(tId, targetIdx) => setHand(prev => { const s = prev.findIndex(t => t?.id === tId); if (s===-1) return prev; const n = [...prev]; const m = n[s]! ; n[s] = n[targetIdx]; n[targetIdx] = m; return n; })} seriesPoints={hS.total} doublesPoints={dblS.total} handCount={hand.filter(Boolean).length} appendableTiles={[]} minMeldToOpen={gameState.highestSeriesValue} colorMult={getColorMultiplier(gameState.indicator)} canOpenSeries={gameState.currentTurn === socket?.id && hasDrawn && hS.total >= gameState.highestSeriesValue} canOpenDoubles={gameState.currentTurn === socket?.id && hasDrawn && (dblS.pairs.length >= 5 || dblS.total >= gameState.highestDoublesValue)} canPutBack={tookDiscard} onPutBack={()=>{}} onOpenSeries={() => socket?.emit('open_series', { roomId, melds: hS.melds })} onOpenDoubles={() => socket?.emit('open_doubles', { roomId, pairs: dblS.pairs })} onAppends={()=>{}} onSortDoubles={()=>{}} onSortSeries={()=>{}} tileSkin={null} highestSeriesValue={gameState.highestSeriesValue} highestDoublesValue={gameState.highestDoublesValue} tournamentScores={gameState.tournamentScores} />
           </footer>
         </div>
       )}
 
-      {/* SONUÇ MODALI */}
+      {/* GAME OVER MODAL (DARK ROYAL BLUR) */}
       <AnimatePresence>
         {gameOverData && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 100000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', backdropFilter: 'blur(15px)' }}>
-            <h2 style={{ color: 'var(--accent-gold)', fontSize: '2rem', fontWeight: 950, marginBottom: '2rem' }}>TUR SONA ERDİ</h2>
-            <div className="glass-panel" style={{ padding: '2rem 1.5rem', width: '100%', maxWidth: '25rem' }}>
-              {gameOverData?.roundResults?.map((res: any) => (
-                <div key={res.playerId} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0.6rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <span style={{ color: '#fff', fontWeight: 800 }}>{res.playerName}</span>
-                  <span style={{ color: res.score > 0 ? '#ff4444' : '#4cd137', fontWeight: 950 }}>{res.score > 0 ? `+${res.score}` : res.score}</span>
-                </div>
-              ))}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 100000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(20px)' }}>
+            <div className="glass-panel" style={{ padding: '3rem', width: '28rem', textAlign: 'center' }}>
+               <h2 style={{ color: 'var(--accent-gold)', fontSize: '2rem', fontWeight: 1000, marginBottom: '2rem', letterSpacing: 2 }}>TUR SONA ERDİ</h2>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', marginBottom: '2rem' }}>
+                  {gameOverData?.roundResults?.map((res: any) => (
+                    <div key={res.playerId} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                      <span style={{ color: '#fff', fontWeight: 800 }}>{res.playerName}</span>
+                      <span style={{ color: res.score > 0 ? '#ff4747' : '#4cd137', fontWeight: 1000 }}>{res.score > 0 ? `+${res.score}` : res.score}</span>
+                    </div>
+                  ))}
+               </div>
+               <button onClick={() => { setGameOverData(null); socket?.emit('start_game', { roomId }); }} className="btn-premium" style={{ width: '100%' }}>YENİ EL BAŞLAT <ArrowRight size={20} /></button>
             </div>
-            <button onClick={() => { setGameOverData(null); socket?.emit('start_game', { roomId }); }} className="btn-premium" style={{ marginTop: '2.5rem', width: '100%', maxWidth: '20rem' }}>SIRADAKİ EL <ArrowRight size={20} /></button>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div style={{ position: 'fixed', left: '1rem', bottom: '0.2rem', zIndex: 100000, pointerEvents: 'none', opacity: 0.2 }}>
-         <span style={{ fontSize: '0.5rem', fontWeight: 950, color: '#fff' }}>{APP_VERSION}</span>
+      <div style={{ position: 'fixed', left: '1rem', bottom: '0.2rem', zIndex: 100000, pointerEvents: 'none', opacity: 0.3 }}>
+         <span style={{ fontSize: '0.55rem', fontWeight: 1000, color: '#fff' }}>HÜKÜMDAR ELITE PRO {APP_VERSION}</span>
       </div>
     </div>
   );
