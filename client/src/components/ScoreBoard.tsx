@@ -51,54 +51,51 @@ export function ScoreBoard({ indicator, highestSeriesValue, highestDoublesValue,
 
   return (
     <div style={{
-      position: 'fixed',
-      top: 20,
-      right: 20,
       zIndex: 9000,
       fontFamily: '"Outfit", sans-serif',
-      width: 260,
+      width: '15rem',
+      flexShrink: 0,
     }}>
       {/* Live Scores Panel */}
       <div style={{
         background: 'rgba(2, 43, 34, 0.9)',
         border: '1.5px solid rgba(255,255,255,0.1)',
-        borderRadius: 16,
-        padding: '12px 16px',
+        borderRadius: '1rem',
+        padding: '0.6rem 0.8rem',
         backdropFilter: 'blur(15px)',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-        marginBottom: 10,
+        boxShadow: '0 0.5rem 1.5rem rgba(0,0,0,0.5)',
       }}>
         <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: 10,
+          marginBottom: '0.5rem',
           borderBottom: '1px solid rgba(255,255,255,0.1)',
-          paddingBottom: 8,
+          paddingBottom: '0.4rem',
         }}>
-          <span style={{ fontWeight: 800, color: '#ffcc00', fontSize: 13 }}>YAZBOZ {roundNumber ? ` - EL ${roundNumber}` : ''}</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ fontWeight: 800, color: '#ffcc00', fontSize: '0.7rem' }}>YAZBOZ {roundNumber ? ` - EL ${roundNumber}` : ''}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
              <button
                onClick={() => setShowRules(true)}
                style={{
                  background: 'rgba(255,255,255,0.1)',
                  border: 'none',
                  borderRadius: '50%',
-                 width: 24,
-                 height: 24,
+                 width: '1.2rem',
+                 height: '1.2rem',
                  display: 'flex',
                  alignItems: 'center',
                  justifyContent: 'center',
                  cursor: 'pointer',
                  color: '#fff',
-                 fontSize: 14,
+                 fontSize: '0.8rem',
                }}
              >
                ⚙️
              </button>
              <button
                 onClick={() => setIsExpanded(!isExpanded)}
-                style={{ background: 'none', border:'none', color:'#fff', cursor:'pointer', fontSize: 12}}
+                style={{ background: 'none', border:'none', color:'#fff', cursor:'pointer', fontSize: '0.7rem'}}
              >
                  {isExpanded ? '▲' : '▼'}
              </button>
@@ -106,26 +103,26 @@ export function ScoreBoard({ indicator, highestSeriesValue, highestDoublesValue,
         </div>
 
         {isExpanded && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                 {players.map(p => (
                     <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 13, color: '#fff', fontWeight: 600 }}>{p.name}</span>
-                        <span style={{ fontSize: 15, color: '#ffcc00', fontWeight: 900 }}>{p.score}</span>
+                        <span style={{ fontSize: '0.7rem', color: '#fff', fontWeight: 600 }}>{p.name}</span>
+                        <span style={{ fontSize: '0.8rem', color: '#ffcc00', fontWeight: 900 }}>{p.score}</span>
                     </div>
                 ))}
             </div>
         )}
 
         <div style={{
-          marginTop: 10,
-          paddingTop: 8,
+          marginTop: '0.5rem',
+          paddingTop: '0.4rem',
           borderTop: '1px solid rgba(255,255,255,0.1)',
           display: 'flex',
           alignItems: 'center',
-          gap: 6,
+          gap: '0.4rem',
         }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: dot }} />
-            <span style={{ fontSize: 11, color: dot, fontWeight: 800 }}>{colorName} ×{mult}</span>
+            <span style={{ width: '0.5rem', height: '0.5rem', borderRadius: '50%', background: dot }} />
+            <span style={{ fontSize: '0.6rem', color: dot, fontWeight: 800 }}>{colorName} ×{mult}</span>
         </div>
       </div>
 

@@ -100,20 +100,20 @@ export function Login({ onLogin }: LoginProps) {
         initial={{ y: 30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         className="glass-panel"
-        style={{ width: '100%', maxWidth: 440, padding: '40px 30px', textAlign: 'center', position: 'relative' }}
+        style={{ width: '100%', maxWidth: '28rem', padding: '2.5rem 2rem', textAlign: 'center', position: 'relative' }}
       >
         {/* LOGO BÖLÜMÜ */}
-        <div style={{ marginBottom: 30 }}>
-          <div style={{ width: 60, height: 60, background: 'linear-gradient(135deg, #ffcc00, #ff9500)', borderRadius: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 15px', boxShadow: '0 8px 20px var(--accent-gold-glow)' }}>
+        <div style={{ marginBottom: '2rem' }}>
+          <div style={{ width: '3.5rem', height: '3.5rem', background: 'linear-gradient(135deg, #ffcc00, #ff9500)', borderRadius: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', boxShadow: '0 0.5rem 1.5rem var(--accent-gold-glow)' }}>
              <Zap size={32} color="#000" fill="#000" />
           </div>
-          <h1 style={{ fontSize: 36, fontWeight: 950, letterSpacing: -1, color: 'var(--accent-gold)', margin: 0 }}>GAPDİRİK</h1>
-          <p style={{ fontSize: 13, opacity: 0.5, fontWeight: 600 }}>TÜRKİYE'NİN EN PREMİUM 101 DENEYİMİ</p>
+          <h1 style={{ fontSize: '2.2rem', fontWeight: 950, letterSpacing: -1, color: 'var(--accent-gold)', margin: 0 }}>GAPDİRİK</h1>
+          <p style={{ fontSize: '0.8rem', opacity: 0.5, fontWeight: 600 }}>TÜRKİYE'NİN EN PREMİUM 101 DENEYİMİ</p>
         </div>
 
         {/* SEKME SEÇİCİ (GİRİŞ / KAYIT) */}
         {(tab === 'login' || tab === 'register') && step === 'form' && (
-          <div style={{ display: 'flex', background: 'rgba(0,0,0,0.3)', padding: 5, borderRadius: 18, marginBottom: 25, border: '1px solid var(--glass-border)' }}>
+          <div style={{ display: 'flex', background: 'rgba(0,0,0,0.3)', padding: '0.3rem', borderRadius: '1.2rem', marginBottom: '1.5rem', border: '1px solid var(--glass-border)' }}>
              <button onClick={() => resetStates('login')} style={tabStyle(tab === 'login')}>GİRİŞ</button>
              <button onClick={() => resetStates('register')} style={tabStyle(tab === 'register')}>KAYIT</button>
           </div>
@@ -127,10 +127,10 @@ export function Login({ onLogin }: LoginProps) {
               initial={{ opacity: 0, x: 10 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -10 }}
-              style={{ display: 'flex', flexDirection: 'column', gap: 18 }}
+              style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
             >
-              {error && <div className="dynamic-toast" style={{ position: 'relative', width: '100%', top: 0, padding: 12, marginBottom: 10, background: 'rgba(255,50,50,0.2)', color: '#ff4444', borderRadius: 14 }}>{error}</div>}
-              {message && <div className="dynamic-toast" style={{ position: 'relative', width: '100%', top: 0, padding: 12, marginBottom: 10, background: 'rgba(76,209,55,0.2)', color: '#4cd137', borderRadius: 14 }}>{message}</div>}
+              {error && <div className="dynamic-toast" style={{ position: 'relative', width: '100%', top: 0, padding: '0.8rem', marginBottom: '0.6rem', background: 'rgba(255,50,50,0.2)', color: '#ff4444', borderRadius: '0.8rem' }}>{error}</div>}
+              {message && <div className="dynamic-toast" style={{ position: 'relative', width: '100%', top: 0, padding: '0.8rem', marginBottom: '0.6rem', background: 'rgba(76,209,55,0.2)', color: '#4cd137', borderRadius: '0.8rem' }}>{message}</div>}
 
               {tab === 'register' && step === 'form' && (
                 <div className="input-group">
@@ -156,25 +156,25 @@ export function Login({ onLogin }: LoginProps) {
               {step === 'verify' && (
                 <div className="input-group">
                    <label style={labelStyle}><ShieldCheck size={14} /> DOĞRULAMA KODU</label>
-                   <input type="text" className="premium-input-custom" maxLength={6} value={userCode} onChange={e => setUserCode(e.target.value)} placeholder="123456" style={{ textAlign: 'center', letterSpacing: 10, fontSize: 24, fontWeight: 900 }} required />
+                   <input type="text" className="premium-input-custom" maxLength={6} value={userCode} onChange={e => setUserCode(e.target.value)} placeholder="123456" style={{ textAlign: 'center', letterSpacing: '0.6rem', fontSize: '1.5rem', fontWeight: 900 }} required />
                 </div>
               )}
             </motion.div>
           </AnimatePresence>
 
-          <button type="submit" className="btn-premium" disabled={loading} style={{ width: '100%', marginTop: 25, height: 55, fontSize: 16 }}>
+          <button type="submit" className="btn-premium" disabled={loading} style={{ width: '100%', marginTop: '1.5rem', height: '3.5rem', fontSize: '1rem' }}>
              {loading ? 'HAZIRLANIYOR...' : step === 'verify' ? 'HESABI ONAYLA' : tab === 'login' ? 'GİRİŞ YAP' : 'ÜYELİĞİ TAMAMLA'}
              {!loading && <ArrowRight size={20} />}
           </button>
 
           {tab === 'login' && (
-            <button type="button" onClick={() => onLogin({ username: `Misafir-${Math.floor(1000 + Math.random() * 9000)}`, chips: 50000, isGuest: true })} className="btn-premium" style={{ width: '100%', marginTop: 12, background: 'rgba(255,255,255,0.05)', color: '#fff' }}>
+            <button type="button" onClick={() => onLogin({ username: `Misafir-${Math.floor(1000 + Math.random() * 9000)}`, chips: 50000, isGuest: true })} className="btn-premium" style={{ width: '100%', marginTop: '0.8rem', background: 'rgba(255,255,255,0.05)', color: '#fff' }}>
                <Ghost size={18} /> MİSAFİR OLARAK GİR
             </button>
           )}
 
           {tab === 'login' && (
-             <p style={{ textAlign: 'center', marginTop: 20, fontSize: 12, opacity: 0.5 }}>
+             <p style={{ textAlign: 'center', marginTop: '1.2rem', fontSize: '0.75rem', opacity: 0.5 }}>
                Şifreni mi unuttun? <span style={{ color: 'var(--accent-gold)', fontWeight: 800, cursor: 'pointer' }} onClick={() => resetStates('forgot')}>YARDIM AL</span>
              </p>
           )}

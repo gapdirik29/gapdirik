@@ -39,25 +39,25 @@ export function PlayerSeat({ player, position, isCurrentTurn, playerDiscards, on
 
   const getContainerStyle = (): React.CSSProperties => {
     const base: React.CSSProperties = {
-      position: 'fixed', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6
+      position: 'absolute', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem'
     };
 
     switch(position) {
-      case 'top': return { ...base, top: 'calc(10px + var(--safe-top))', left: '15px' };
-      case 'bottom': return { ...base, bottom: 'calc(130px + var(--safe-bottom))', right: '15px' };
-      case 'left': return { ...base, top: '50%', left: 'calc(8px + var(--safe-left))', transform: 'translateY(-50%)' };
-      case 'right': return { ...base, top: '50%', right: 'calc(8px + var(--safe-right))', transform: 'translateY(-50%)' };
+      case 'top': return { ...base, top: 'calc(0.5rem + var(--safe-top))', left: '50%', transform: 'translateX(-50%)' };
+      case 'bottom': return { ...base, bottom: '2rem', right: '1.5rem' };
+      case 'left': return { ...base, top: '50%', left: 'calc(0.5rem + var(--safe-left))', transform: 'translateY(-50%)' };
+      case 'right': return { ...base, top: '50%', right: 'calc(0.5rem + var(--safe-right))', transform: 'translateY(-50%)' };
       default: return base;
     }
   };
 
   const getDiscardStyle = (): React.CSSProperties => {
-    const base: React.CSSProperties = { position: 'fixed', zIndex: 5, pointerEvents: 'none' };
+    const base: React.CSSProperties = { position: 'absolute', zIndex: 5, pointerEvents: 'none' };
     switch(position) {
-      case 'top': return { ...base, top: 'calc(40px + var(--safe-top) + 100px)', left: '40px' };
-      case 'bottom': return { ...base, bottom: 'calc(240px + var(--safe-bottom))', right: '40px' };
-      case 'left': return { ...base, top: '50%', left: '110px', transform: 'translateY(-50%)' };
-      case 'right': return { ...base, top: '50%', right: '110px', transform: 'translateY(-50%)' };
+      case 'top': return { ...base, top: '10rem', left: '50%', transform: 'translateX(-50%)' };
+      case 'bottom': return { ...base, bottom: '10rem', right: '5rem' };
+      case 'left': return { ...base, top: '50%', left: '8rem', transform: 'translateY(-50%)' };
+      case 'right': return { ...base, top: '50%', right: '8rem', transform: 'translateY(-50%)' };
       default: return base;
     }
   };

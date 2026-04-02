@@ -271,26 +271,29 @@ export default function App() {
   );
 
   return (
-    <div className={`theme-${theme} game-layout`} style={{ 
-      position: 'fixed', inset: 0, 
-      fontFamily: '"Outfit", sans-serif', overflow: 'hidden', 
-      background: 'radial-gradient(circle at center, #15352a 0%, #081a14 100%)' 
-    }}>
-      <div style={{ position: 'relative', width: '100%', height: '100%', padding: '0 var(--safe-right) 0 var(--safe-left)' }}>
-        
-        {/* SKOR VE OYUN BİLGİSİ */}
-        <div style={{ position: 'absolute', top: 'calc(10px + var(--safe-top))', left: '50%', transform: 'translateX(-50%)', zIndex: 100 }}>
-          <ScoreBoard 
-            indicator={gameState.indicator} 
-            highestSeriesValue={gameState.highestSeriesValue} 
-            highestDoublesValue={gameState.highestDoublesValue} 
-            players={gameState.players} 
-            roundNumber={gameState.roundNumber} 
-          />
-        </div>
+    <div className={`theme-${theme} game-layout`}>
+      {/* ÜST PANEL (STATS & NAV) */}
+      <header className="header-stats" style={{ zIndex: 1000 }}>
+        <ScoreBoard 
+          indicator={gameState.indicator} 
+          highestSeriesValue={gameState.highestSeriesValue} 
+          highestDoublesValue={gameState.highestDoublesValue} 
+          players={gameState.players} 
+          roundNumber={gameState.roundNumber} 
+        />
+        <button 
+          onClick={() => { setScreen('lobby'); soundManager.play('click'); }}
+          className="btn-premium btn-compact" 
+          style={{ background: 'rgba(255,0,0,0.15)', border: '1px solid rgba(255,0,0,0.3)', color: '#ff4d4d' }}
+        >
+          KALK
+        </button>
+      </header>
 
-        {/* OYUNCU KOLTUKLARI */}
-        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+      {/* OYUN MERKEZİ */}
+      <main className="center-board">
+        {/* Oyuncu Koltukları Katmanı */}
+        <div className="players-container">
            {gameState.players.map((p, i) => {
              const seatLastMsg = chatMessages.find(m => m.senderName === p.name && (Date.now() - m.timestamp < 5000))?.message;
              return (
@@ -308,8 +311,8 @@ export default function App() {
            })}
         </div>
 
-        {/* MASA MERKEZİ */}
-        <div className="center-deck-area" style={{ position: 'absolute', top: '45%', left: '50%', transform: 'translate(-50%, -50%)', zIndex: 50 }}>
+        {/* Masa Ortası (Deste) */}
+        <div className="center-deck-area">
           <TableCenter 
             indicator={gameState.indicator} 
             drawPileCount={gameState.drawPileCount} 
@@ -323,102 +326,93 @@ export default function App() {
             tileSkin={tileSkin} 
           />
         </div>
+      </main>
 
-        {/* SOHBET HUB */}
-        <div className="social-hub-float" style={{ display: 'flex', gap: 8, padding: 10, zIndex: 6000 }}>
-          {['Helal!', 'Tebrikler!', 'Hadi!', 'Okey Boşa!', 'Düşünme!', 'Nasip...'].map(msg => (
-            <motion.button key={msg} whileTap={{ scale: 0.9 }} 
-              onClick={() => { socket?.emit('send_message', { roomId, message: msg }); soundManager.play('click'); }}
-              className="glass-panel" 
-              style={{ padding: '8px 14px', fontSize: 10, border: '1.5px solid rgba(255,215,0,0.2)', color: '#fff', fontWeight: 950, whiteSpace: 'nowrap' }}>
-              {msg}
-            </motion.button>
-          ))}
-        </div>
+      {/* SOHBET HUB */}
+      <aside className="social-hub-float">
+        {['Helal!', 'Hadi!', 'Okey Boşa!', 'Nasip...'].map(msg => (
+          <motion.button key={msg} whileTap={{ scale: 0.9 }} 
+            onClick={() => { socket?.emit('send_message', { roomId, message: msg }); soundManager.play('click'); }}
+            className="glass-panel" 
+            style={{ padding: '0.6rem 1rem', fontSize: '0.7rem', color: '#fff', fontWeight: 900, whiteSpace: 'nowrap' }}>
+            {msg}
+          </motion.button>
+        ))}
+      </aside>
 
-        {/* MASADAN KALK */}
-        <div style={{ position: 'absolute', top: 'calc(15px + var(--safe-top))', right: 'calc(15px + var(--safe-right))', zIndex: 6000 }}>
-           <button 
-             onClick={() => { setScreen('lobby'); soundManager.play('click'); }}
-             className="btn-premium" 
-             style={{ padding: '8px 16px', fontSize: 11, background: 'rgba(255,0,0,0.15)', border: '1px solid rgba(255,0,0,0.3)', color: '#ff4d4d' }}
-           >
-             MASADAN KALK
-           </button>
-        </div>
+      {/* ISTAKA ALANI */}
+      <footer className="rack-area">
+        <Rack 
+          hand={hand} 
+          selectedId={selectedId}
+          onSelectTile={setSelectedId}
+          onDoubleClickTile={(tId) => { 
+              if (gameState.currentTurn === socket?.id && hasDrawn) { 
+                socket?.emit('discard_tile', { roomId, tileId: tId }); 
+                setHand(prev => prev.map(t => t?.id === tId ? null : t)); 
+                setHasDrawn(false); 
+              } 
+          }}
+          onMoveToSlot={(tId, targetIdx) => setHand(prev => { 
+              const s = prev.findIndex(t => t?.id === tId); 
+              if (s===-1) return prev; 
+              const n = [...prev]; 
+              const m = n[s]! ; 
+              n[s] = n[targetIdx]; 
+              n[targetIdx] = m; 
+              return n; 
+          })}
+          seriesPoints={hS.total} 
+          doublesPoints={dblS.total} 
+          handCount={hand.filter(Boolean).length} 
+          appendableTiles={[]} 
+          minMeldToOpen={gameState.highestSeriesValue} 
+          colorMult={getColorMultiplier(gameState.indicator)} 
+          canOpenSeries={gameState.currentTurn === socket?.id && hasDrawn && hS.total >= gameState.highestSeriesValue} 
+          canOpenDoubles={gameState.currentTurn === socket?.id && hasDrawn && (dblS.pairs.length >= 5 || dblS.total >= gameState.highestDoublesValue)} 
+          canPutBack={tookDiscard} 
+          onPutBack={()=>{}} 
+          onOpenSeries={() => socket?.emit('open_series', { roomId, melds: hS.melds })} 
+          onOpenDoubles={() => socket?.emit('open_doubles', { roomId, pairs: dblS.pairs })} 
+          onAppends={()=>{}} 
+          onSortDoubles={()=>{}} 
+          onSortSeries={()=>{}} 
+          tileSkin={tileSkin} 
+          highestSeriesValue={gameState.highestSeriesValue} 
+          highestDoublesValue={gameState.highestDoublesValue} 
+          tournamentScores={gameState.tournamentScores} 
+        />
+      </footer>
 
-        {/* ISTAKA */}
-        <div className="rack-area" style={{ position: 'absolute', bottom: 0, left: 0, right: 0, zIndex: 1000 }}>
-          <Rack 
-            hand={hand} 
-            selectedId={selectedId}
-            onSelectTile={setSelectedId}
-            onDoubleClickTile={(tId) => { 
-                if (gameState.currentTurn === socket?.id && hasDrawn) { 
-                  socket?.emit('discard_tile', { roomId, tileId: tId }); 
-                  setHand(prev => prev.map(t => t?.id === tId ? null : t)); 
-                  setHasDrawn(false); 
-                } 
-            }}
-            onMoveToSlot={(tId, targetIdx) => setHand(prev => { 
-                const s = prev.findIndex(t => t?.id === tId); 
-                if (s===-1) return prev; 
-                const n = [...prev]; 
-                const m = n[s]! ; 
-                n[s] = n[targetIdx]; 
-                n[targetIdx] = m; 
-                return n; 
-            })}
-            seriesPoints={hS.total} 
-            doublesPoints={dblS.total} 
-            handCount={hand.filter(Boolean).length} 
-            appendableTiles={[]} 
-            minMeldToOpen={gameState.highestSeriesValue} 
-            colorMult={getColorMultiplier(gameState.indicator)} 
-            canOpenSeries={gameState.currentTurn === socket?.id && hasDrawn && hS.total >= gameState.highestSeriesValue} 
-            canOpenDoubles={gameState.currentTurn === socket?.id && hasDrawn && (dblS.pairs.length >= 5 || dblS.total >= gameState.highestDoublesValue)} 
-            canPutBack={tookDiscard} 
-            onPutBack={()=>{}} 
-            onOpenSeries={() => socket?.emit('open_series', { roomId, melds: hS.melds })} 
-            onOpenDoubles={() => socket?.emit('open_doubles', { roomId, pairs: dblS.pairs })} 
-            onAppends={()=>{}} 
-            onSortDoubles={()=>{}} 
-            onSortSeries={()=>{}} 
-            tileSkin={tileSkin} 
-            highestSeriesValue={gameState.highestSeriesValue} 
-            highestDoublesValue={gameState.highestDoublesValue} 
-            tournamentScores={gameState.tournamentScores} 
-          />
-        </div>
-
-        <div style={{ position: 'fixed', left: 10, bottom: 'calc(8px + var(--safe-bottom))', zIndex: 100000, pointerEvents: 'none', opacity: 0.3 }}>
-           <span style={{ fontSize: 9, fontWeight: 950, color: '#fff', letterSpacing: 2, background: 'rgba(0,0,0,0.4)', padding: '4px 10px', borderRadius: 20 }}>
-             {APP_VERSION}
-           </span>
-        </div>
-
-        <AnimatePresence>
-          {gameOverData && (
-            <motion.div 
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 100000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 20, backdropFilter: 'blur(15px)' }}
-            >
-              <h2 style={{ color: 'var(--accent-gold)', fontSize: 32, fontWeight: 950, marginBottom: 30 }}>TUR SONA ERDİ</h2>
-              <div className="glass-panel" style={{ padding: '30px 20px', width: '100%', maxWidth: 400 }}>
-                {gameOverData?.roundResults?.map((res: any) => (
-                  <div key={res.playerId} style={{ display: 'flex', justifyContent: 'space-between', padding: '15px 10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <span style={{ color: '#fff', fontWeight: 800 }}>{res.playerName}</span>
-                    <span style={{ color: res.score > 0 ? '#ff4444' : '#4cd137', fontWeight: 950 }}>{res.score > 0 ? `+${res.score}` : res.score}</span>
-                  </div>
-                ))}
-              </div>
-              <button onClick={() => { setGameOverData(null); socket?.emit('start_game', { roomId }); }} className="btn-premium" style={{ marginTop: 40, width: '100%', maxWidth: 300 }}>
-                SIRADAKİ EL <ArrowRight size={20} />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+      {/* VERSİYON BİLGİSİ */}
+      <div style={{ position: 'fixed', left: '1rem', bottom: 'calc(0.5rem + var(--safe-bottom))', zIndex: 100000, pointerEvents: 'none', opacity: 0.3 }}>
+         <span style={{ fontSize: '0.6rem', fontWeight: 950, color: '#fff', letterSpacing: 2, background: 'rgba(0,0,0,0.4)', padding: '0.3rem 0.8rem', borderRadius: '1rem' }}>
+           {APP_VERSION}
+         </span>
       </div>
+
+      {/* TUR SONU SONUÇLARI */}
+      <AnimatePresence>
+        {gameOverData && (
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', zIndex: 100000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', backdropFilter: 'blur(15px)' }}
+          >
+            <h2 style={{ color: 'var(--accent-gold)', fontSize: '2rem', fontWeight: 950, marginBottom: '2rem' }}>TUR SONA ERDİ</h2>
+            <div className="glass-panel" style={{ padding: '2rem 1.5rem', width: '100%', maxWidth: '25rem' }}>
+              {gameOverData?.roundResults?.map((res: any) => (
+                <div key={res.playerId} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem 0.6rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                  <span style={{ color: '#fff', fontWeight: 800 }}>{res.playerName}</span>
+                  <span style={{ color: res.score > 0 ? '#ff4444' : '#4cd137', fontWeight: 950 }}>{res.score > 0 ? `+${res.score}` : res.score}</span>
+                </div>
+              ))}
+            </div>
+            <button onClick={() => { setGameOverData(null); socket?.emit('start_game', { roomId }); }} className="btn-premium" style={{ marginTop: '2.5rem', width: '100%', maxWidth: '20rem' }}>
+              SIRADAKİ EL <ArrowRight size={20} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
